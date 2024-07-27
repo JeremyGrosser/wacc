@@ -1,0 +1,9 @@
+Writing a C Compiler
+
+Book: https://nostarch.com/writing-c-compiler
+Author site: https://norasandler.com/book/
+
+The book recommends using an implementation language with "pattern matching"
+features. I think the "prototyped" status of this RFC means GNAT supports that.
+I'm also pretty sure this is just syntactic sugar for a bunch of successive
+`elsif` blocks, so I think I can manage even if it isn't well supported.

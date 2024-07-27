@@ -16,6 +16,3 @@ aaa = "~0.2.6"
 
 [build-switches]
 release.optimization = ["-gnatn2", "-O3"]
-
-[[depends-on]]
-gnatprove = "^13.2.1"

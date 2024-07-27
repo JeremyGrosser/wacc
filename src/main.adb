@@ -36,6 +36,9 @@ procedure Main is
    begin
       if Lex then
          WACC.Lexer.Lex (Preprocessed_File, Tokens);
+         for T of Tokens loop
+            Ada.Text_IO.Put_Line (T'Image);
+         end loop;
       end if;
    end Compile;
 
@@ -75,6 +78,7 @@ procedure Main is
    Input_File_Arg : Natural := 0;
    Should_Lex, Should_Parse, Should_Codegen : Boolean := False;
 begin
+   CLI.Set_Exit_Status (0);
    for I in 1 .. CLI.Argument_Count loop
       declare
          Arg : constant String := CLI.Argument (I);
@@ -119,10 +123,10 @@ begin
          Parse    => Should_Parse,
          Codegen  => Should_Codegen);
       Ada.Directories.Delete_File (Preprocessed_File);
-      Assemble (Assembly_File, Object_File);
-      Ada.Directories.Delete_File (Assembly_File);
-      Link (Object_File, Executable_File);
-      Ada.Directories.Delete_File (Object_File);
+      --  Assemble (Assembly_File, Object_File);
+      --  Ada.Directories.Delete_File (Assembly_File);
+      --  Link (Object_File, Executable_File);
+      --  Ada.Directories.Delete_File (Object_File);
    exception
       when E : AAA.Processes.Child_Error =>
          Delete_If_Exists (Preprocessed_File);
@@ -130,6 +134,10 @@ begin
          Delete_If_Exists (Object_File);
          Delete_If_Exists (Executable_File);
          CLI.Set_Exit_Status (2);
+         Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error,
+            Ada.Exceptions.Exception_Message (E));
+      when E : others =>
+         CLI.Set_Exit_Status (3);
          Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error,
             Ada.Exceptions.Exception_Message (E));
    end;

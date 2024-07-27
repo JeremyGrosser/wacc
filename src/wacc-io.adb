@@ -1,27 +1,16 @@
-with Ada.Directories;
-with Ada.Unchecked_Deallocation;
+pragma Warnings (Off, """System.Mmap"" is an internal GNAT unit");
+pragma Style_Checks ("M120");
+with System.Mmap;
 
 package body WACC.IO is
    package TIO renames Ada.Text_IO;
-
-   procedure Free is new Ada.Unchecked_Deallocation
-      (String, Any_String);
 
    procedure Open
       (File : in out Reader;
        Filename : String)
    is
-      Input : TIO.File_Type;
    begin
-      File.Length := Natural (Ada.Directories.Size (Filename)) - 3;
-      File.Data := new String (1 .. File.Length);
-      TIO.Open
-         (File => Input,
-          Mode => TIO.In_File,
-          Name => Filename,
-          Form => "8"); --  all inputs are assumed UTF-8
-      TIO.Get (Input, File.Data.all);
-      TIO.Close (Input);
+      File.Data := System.Mmap.Read_Whole_File (Filename);
       File.Index := File.Data'First;
    end Open;
 
@@ -34,8 +23,7 @@ package body WACC.IO is
       (File : in out Reader)
    is
    begin
-      Free (File.Data);
-      File.Length := 0;
+      GNAT.Strings.Free (File.Data);
       File.Index := 0;
    end Close;
 

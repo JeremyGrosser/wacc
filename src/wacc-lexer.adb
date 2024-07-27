@@ -38,8 +38,12 @@ is
          T.Typ := T_int;
          loop
             Ch := IO.Next (File);
+            if Ch not in '0' .. '9' and then Ch in 'a' .. 'z' | 'A' .. 'Z' | '_' then
+               raise Lex_Error with "Expected break after integer";
+            end if;
             exit when Ch not in '0' .. '9';
             Append (T.Literal, Ch);
+            exit when IO.End_Of_File (File);
             IO.Advance (File);
          end loop;
          Token_Vectors.Append (Tokens, T);
@@ -54,6 +58,7 @@ is
             Ch := IO.Next (File);
             exit when Ch not in 'a' .. 'z' | 'A' .. 'Z' | '_';
             Append (T.Literal, Ch);
+            exit when IO.End_Of_File (File);
             IO.Advance (File);
          end loop;
          Token_Vectors.Append (Tokens, T);

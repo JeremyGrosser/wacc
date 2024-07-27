@@ -1,4 +1,5 @@
 private with Ada.Text_IO;
+private with GNAT.Strings;
 
 package WACC.IO
    with Elaborate_Body, SPARK_Mode => On
@@ -28,7 +29,7 @@ is
    procedure Advance
       (File  : in out Reader;
        Count : Positive := 1)
-   with Pre => Is_Open (File) and then not End_Of_File (File);
+   with Pre => Is_Open (File);
 
    function Peek
       (File   : Reader;
@@ -76,13 +77,9 @@ is
 
 private
 
-   type Any_String is access String;
-
    type Reader is record
-      Data   : Any_String := null;
-      Index  : Natural := 0;
-      Length : Natural := 0;
-      Dirty  : Boolean := False;
+      Data  : GNAT.Strings.String_Access;
+      Index : Natural := 0;
    end record;
 
    type Writer is limited record

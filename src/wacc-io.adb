@@ -40,38 +40,10 @@ package body WACC.IO is
        return Boolean
    is (File.Index >= File.Data'Last);
 
-   function Peek
-      (File : Reader;
-       Offset : Positive := 1)
-       return Character
-   is
-      I : constant Positive := File.Index + Offset;
-   begin
-      if I > File.Data'Last then
-         return ASCII.NUL;
-      else
-         return File.Data (I);
-      end if;
-   end Peek;
-
    function Next
       (File : Reader)
        return Character
    is (if File.Index <= File.Data'Last then File.Data.all (File.Index) else ASCII.NUL);
-
-   function Lookahead
-      (File  : Reader;
-       Count : Positive)
-       return String
-   is
-      S : String (1 .. Count) := (others => ASCII.NUL);
-   begin
-      for I in S'Range loop
-         exit when (File.Index + I - 1) > File.Data'Last;
-         S (I) := File.Data (File.Index + I - 1);
-      end loop;
-      return S;
-   end Lookahead;
 
    procedure Open
       (File : in out Writer;

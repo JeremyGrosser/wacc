@@ -31,18 +31,6 @@ is
        Count : Positive := 1)
    with Pre => Is_Open (File);
 
-   function Peek
-      (File   : Reader;
-       Offset : Positive := 1)
-       return Character
-   with Pre => Is_Open (File);
-
-   function Lookahead
-      (File  : Reader;
-       Count : Positive)
-       return String
-   with Pre => Is_Open (File);
-
    function Next
       (File : Reader)
        return Character

@@ -1,35 +1,22 @@
 pragma Style_Checks ("M120");
 with WACC.IO;
 
-package body WACC.Lexer
-   with SPARK_Mode => On
-is
+package body WACC.Lexer is
    procedure Lex
       (Input_File : String;
        Tokens     : out Token_List)
    is
       File : IO.Reader;
 
-      function Match
-         (Prefix : String)
-         return Boolean
-      is
-      begin
-         if IO.Lookahead (File, Prefix'Length) = Prefix then
-            IO.Advance (File, Prefix'Length);
-            return True;
-         else
-            return False;
-         end if;
-      end Match;
-
-      procedure Add_Token
+      procedure Add_Single
          (Typ : Token_Type)
       is
          T : constant Token := (Typ => Typ, others => <>);
       begin
+         --  Append (T.Literal, IO.Next (File));
+         IO.Advance (File);
          Token_Vectors.Append (Tokens, T);
-      end Add_Token;
+      end Add_Single;
 
       procedure Lex_Integer is
          Ch : Character;
@@ -38,10 +25,13 @@ is
          T.Typ := T_int;
          loop
             Ch := IO.Next (File);
-            if Ch not in '0' .. '9' and then Ch in 'a' .. 'z' | 'A' .. 'Z' | '_' then
-               raise Lex_Error with "Expected break after integer";
+            if Ch not in '0' .. '9' then
+               if Ch in 'a' .. 'z' | 'A' .. 'Z' | '_' then
+                  raise Lex_Error with "Expected break after integer";
+               else
+                  exit;
+               end if;
             end if;
-            exit when Ch not in '0' .. '9';
             Append (T.Literal, Ch);
             exit when IO.End_Of_File (File);
             IO.Advance (File);
@@ -61,6 +51,15 @@ is
             exit when IO.End_Of_File (File);
             IO.Advance (File);
          end loop;
+
+         if T.Literal = "void" then
+            T.Typ := T_void;
+         elsif T.Literal = "int" then
+            T.Typ := T_int;
+         elsif T.Literal = "return" then
+            T.Typ := T_return;
+         end if;
+
          Token_Vectors.Append (Tokens, T);
       end Lex_Identifier;
 
@@ -71,29 +70,20 @@ is
          Ch := IO.Next (File);
          if Ch in ' ' | ASCII.CR | ASCII.LF | ASCII.HT then
             IO.Advance (File);
-         elsif Match ("return") then
-            Add_Token (T_return);
-         elsif Match ("void") then
-            Add_Token (T_void);
          elsif Ch in '0' .. '9' then
             Lex_Integer;
          elsif Ch in 'a' .. 'z' | 'A' .. 'Z' | '_' then
             Lex_Identifier;
          elsif Ch = '(' then
-            IO.Advance (File);
-            Add_Token (T_Open_Paren);
+            Add_Single (T_Open_Paren);
          elsif Ch = ')' then
-            IO.Advance (File);
-            Add_Token (T_Close_Paren);
+            Add_Single (T_Close_Paren);
          elsif Ch = '{' then
-            IO.Advance (File);
-            Add_Token (T_Open_Brace);
+            Add_Single (T_Open_Brace);
          elsif Ch = '}' then
-            IO.Advance (File);
-            Add_Token (T_Close_Brace);
+            Add_Single (T_Close_Brace);
          elsif Ch = ';' then
-            IO.Advance (File);
-            Add_Token (T_Semicolon);
+            Add_Single (T_Semicolon);
          else
             raise Lex_Error with "Unexpected character in input: " & Character'Pos (Ch)'Image & " '" & Ch & "'";
          end if;

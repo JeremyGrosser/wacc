@@ -2,7 +2,7 @@ with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 with Ada.Containers.Vectors;
 
 package WACC.Lexer
-   with Elaborate_Body, SPARK_Mode => On
+   with Elaborate_Body
 is
    Lex_Error : exception;
 

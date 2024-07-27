@@ -1,22 +1,33 @@
-private with Ada.Containers.Vectors;
+with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
+with Ada.Containers.Vectors;
 
 package WACC.Lexer
    with Elaborate_Body, SPARK_Mode => On
 is
+   Lex_Error : exception;
 
-   type Token_Type is (T_Identifier, T_int);
-   type Token
-      (Typ : Token_Type)
-   is null record;
+   type Token_Type is
+      (T_Identifier,
+       T_Constant,
+       T_int,
+       T_void,
+       T_return,
+       T_Open_Paren,
+       T_Close_Paren,
+       T_Open_Brace,
+       T_Close_Brace,
+       T_Semicolon);
 
-   type Token_List is private;
+   type Token is record
+      Typ : Token_Type;
+      Literal : Unbounded_String := Null_Unbounded_String;
+   end record;
+
+   package Token_Vectors is new Ada.Containers.Vectors (Positive, Token);
+   subtype Token_List is Token_Vectors.Vector;
 
    procedure Lex
       (Input_File : String;
        Tokens     : out Token_List);
-
-private
-
-   type Token_List is null record;
 
 end WACC.Lexer;

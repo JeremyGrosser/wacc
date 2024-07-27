@@ -1,4 +1,4 @@
-name = "driver"
+name = "wacc"
 description = ""
 version = "0.1.0-dev"
 
@@ -9,7 +9,13 @@ licenses = "BSD-3-Clause"
 website = ""
 tags = []
 
-executables = ["wcc"]
+executables = ["wacc"]
 
 [[depends-on]]
 aaa = "~0.2.6"
+
+[build-switches]
+release.optimization = ["-gnatn2", "-O3"]
+
+[[depends-on]]
+gnatprove = "^13.2.1"

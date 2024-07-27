@@ -8,6 +8,8 @@ with Ada.Directories;
 with AAA.Strings;
 with AAA.Processes;
 
+with WACC.Lexer;
+
 procedure Main is
    package CLI renames Ada.Command_Line;
 
@@ -27,8 +29,14 @@ procedure Main is
       (Preprocessed_File, Assembly_File : String;
        Lex, Parse, Codegen : Boolean)
    is
+      pragma Unreferenced (Assembly_File);
+      pragma Unreferenced (Parse);
+      pragma Unreferenced (Codegen);
+      Tokens : WACC.Lexer.Token_List;
    begin
-      null;
+      if Lex then
+         WACC.Lexer.Lex (Preprocessed_File, Tokens);
+      end if;
    end Compile;
 
    procedure Assemble
@@ -87,7 +95,9 @@ begin
 
    if Input_File_Arg = 0 then
       Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error,
-         "Usage: wcc [--lex] [--parse] [--codegen] <input file>");
+         "Usage: wacc" &
+         " [--lex] [--parse] [--codegen] " &
+         "<input file>");
       CLI.Set_Exit_Status (1);
       return;
    end if;

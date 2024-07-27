@@ -1,0 +1,8 @@
+pragma Profile (Jorvik);
+pragma Restrictions (No_Exception_Registration);
+pragma Restrictions (No_Implicit_Dynamic_Code);
+pragma Restrictions (No_Implicit_Heap_Allocations);
+pragma Restrictions (No_Finalization);
+pragma Initialize_Scalars;
+
+pragma Assertion_Policy (Check);

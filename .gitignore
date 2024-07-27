@@ -1,3 +1,7 @@
 *.swp
 listings/return_2
 listings/return_2.[iso]
+/obj/
+/bin/
+/alire/
+/config/

@@ -12,7 +12,7 @@ package body WACC.AST is
          Ada.Text_IO.Put (' ');
       end loop;
       Ada.Text_IO.Put (Ada.Text_IO.Standard_Error, Str);
-      Ada.Text_IO.New_Line;
+      Ada.Text_IO.New_Line (Ada.Text_IO.Standard_Error);
    end Log;
 
    procedure Indent is

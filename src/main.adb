@@ -36,7 +36,7 @@ procedure Main is
       Tokens : WACC.Lexer.Token_List;
       Root   : WACC.AST.Program_Node;
    begin
-      if Lex then
+      if Lex or else Parse then
          WACC.Lexer.Lex (Preprocessed_File, Tokens);
       end if;
 

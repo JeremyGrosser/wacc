@@ -15,4 +15,4 @@ executables = ["wacc"]
 aaa = "~0.2.6"
 
 [build-switches]
-release.optimization = ["-gnatn2", "-O3"]
+release.optimization = ["-gnatn2", "-O3", "-march=native"]

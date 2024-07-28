@@ -31,6 +31,9 @@ package body WACC.Parser is
          if Tok.Typ = WACC.Lexer.T_int then
             Node := new WACC.AST.Exp_Node'(Typ => WACC.AST.N_Constant, Int => 0);
             for Ch of Ada.Strings.Unbounded.To_String (Tok.Literal) loop
+               if Ch not in '0' .. '9' then
+                  raise Program_Error with "Expected 0 .. 9 in int constant, got '" & Ch & "'";
+               end if;
                Node.Int := Node.Int * 10 + Character'Pos (Ch) - Character'Pos ('0');
             end loop;
             Delete_First (Input);
@@ -69,6 +72,9 @@ package body WACC.Parser is
       end Parse_Function;
    begin
       Parse_Function (Tree.Function_Definition);
+      if not Is_Empty (Input) then
+         raise Parse_Error with "Unexpected tokens after function definition";
+      end if;
    end Parse_Program;
 
 end WACC.Parser;

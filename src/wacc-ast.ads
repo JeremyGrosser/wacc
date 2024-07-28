@@ -11,13 +11,11 @@ is
 
    subtype Identifier is Unbounded_String;
 
-   type Node is tagged null record;
-
    type Exp_Type is
       (N_Constant);
    type Exp_Node
       (Typ : Exp_Type)
-   is new Node with record
+   is record
       case Typ is
          when N_Constant =>
             Int : Integer;
@@ -29,7 +27,7 @@ is
       (N_Return);
    type Statement_Node
       (Typ : Statement_Type)
-   is new Node with record
+   is record
       case Typ is
          when N_Return =>
             Exp : Any_Exp_Node;
@@ -37,12 +35,12 @@ is
    end record;
    type Any_Statement_Node is access Statement_Node;
 
-   type Function_Definition_Node is new Node with record
+   type Function_Definition_Node is record
       Name  : Identifier;
       FBody : Any_Statement_Node;
    end record;
 
-   type Program_Node is new Node with record
+   type Program_Node is record
       Function_Definition : Function_Definition_Node;
    end record;
 

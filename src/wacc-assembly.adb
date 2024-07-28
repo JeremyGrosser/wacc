@@ -60,9 +60,9 @@ package body WACC.Assembly is
       case This.Typ is
          when Mov =>
             Log ("mov ");
-            Print (This.Src.all);
-            Log (", ");
             Print (This.Dst.all);
+            Log (", ");
+            Print (This.Src.all);
          when Ret =>
             Log ("ret");
       end case;

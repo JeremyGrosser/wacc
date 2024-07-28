@@ -51,3 +51,11 @@ The book links to a paper describing three options for AST data structures with
 a preference towards an object oriented implementation allowing use of the
 visitor pattern. I'm going to stick with discriminated record types for now,
 but will move to objects if needed.
+
+Translating ASDL to discriminated records seems to be working well. If this
+pattern continues to go well, I'll likely write an automated asdl2ada
+generator.
+
+Codegen went suprisingly smoothly. Having a separate data structure for
+assembly seems like overkill at this point, but I can see how it might be
+useful for optimization passes later.

@@ -9,6 +9,7 @@ with AAA.Strings;
 with AAA.Processes;
 
 with WACC.Lexer;
+with WACC.AST;
 
 procedure Main is
    package CLI renames Ada.Command_Line;

@@ -46,3 +46,9 @@ allocates a little bit of memory. I don't bother allocating the literal for
 single character tokens as it should be obvious. Storing offsets within the
 input text would be more efficient and enable contextual error messages later
 but I want to avoid tight coupling between the I/O routines and lexer for now.
+
+The book links to a paper describing three options for AST data structures with
+a preference towards an object oriented implementation allowing use of the
+visitor pattern. I'm going to use a hybrid approach with classes for the nodes,
+but discriminated by an enum for "sum types". I think this makes sense in Ada
+but I'm not absolutely certain. I might change this later.

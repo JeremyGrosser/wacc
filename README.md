@@ -1,6 +1,6 @@
 # Writing a C Compiler (Ada implementation)
 
-Book: https://nostarch.com/writing-c-compiler
+Book: https://nostarch.com/writing-c-compiler  
 Author site: https://norasandler.com/book/
 
 ## Chapter 1: A Minimal Compiler

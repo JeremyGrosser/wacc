@@ -23,10 +23,11 @@ package body WACC.Parser is
          end if;
       end Expect;
 
-      procedure Parse_Exp
-         (Node : in out WACC.AST.Any_Exp_Node)
+      function Parse_Exp
+         return WACC.AST.Any_Exp_Node
       is
          Tok : constant WACC.Lexer.Token := First_Element (Input);
+         Node : WACC.AST.Any_Exp_Node;
       begin
          if Tok.Typ = WACC.Lexer.T_int then
             Node := new WACC.AST.Exp_Node'(Typ => WACC.AST.N_Constant, Int => 0);
@@ -37,19 +38,22 @@ package body WACC.Parser is
                Node.Int := Node.Int * 10 + Character'Pos (Ch) - Character'Pos ('0');
             end loop;
             Delete_First (Input);
+            return Node;
          else
             raise Parse_Error with "Expected Constant in exp";
          end if;
       end Parse_Exp;
 
-      procedure Parse_Statement
-         (Node : in out WACC.AST.Any_Statement_Node)
+      function Parse_Statement
+         return WACC.AST.Any_Statement_Node
       is
+         Node : WACC.AST.Any_Statement_Node;
       begin
          Expect (WACC.Lexer.T_return);
          Node := new WACC.AST.Statement_Node'(Typ => WACC.AST.N_Return, Exp => null);
-         Parse_Exp (Node.Exp);
+         Node.Exp := Parse_Exp;
          Expect (WACC.Lexer.T_Semicolon);
+         return Node;
       end Parse_Statement;
 
       procedure Parse_Function
@@ -67,7 +71,7 @@ package body WACC.Parser is
          Expect (WACC.Lexer.T_void);
          Expect (WACC.Lexer.T_Close_Paren);
          Expect (WACC.Lexer.T_Open_Brace);
-         Parse_Statement (Node.FBody);
+         Node.FBody := Parse_Statement;
          Expect (WACC.Lexer.T_Close_Brace);
       end Parse_Function;
    begin

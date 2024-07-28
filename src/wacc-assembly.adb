@@ -63,7 +63,7 @@ package body WACC.Assembly is
    begin
       case This.Typ is
          when Mov =>
-            Write ("mov ");
+            Write ("movl ");
             Print (This.Src.all);
             Write (", ");
             Print (This.Dst.all);
@@ -77,7 +77,7 @@ package body WACC.Assembly is
    is
       Name : constant String := To_String (This.Name);
    begin
-      Write (".globl ");
+      Write ("    .globl ");
       Write (Name);
       New_Line;
       Write (Name);

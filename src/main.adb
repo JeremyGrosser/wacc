@@ -11,6 +11,7 @@ with AAA.Processes;
 with WACC.Lexer;
 with WACC.AST;
 with WACC.Parser;
+with WACC.Assembly;
 
 procedure Main is
    package CLI renames Ada.Command_Line;

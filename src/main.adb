@@ -41,7 +41,7 @@ procedure Main is
       end if;
 
       if Parse then
-         WACC.Parser.Parse (Tokens, Root);
+         WACC.Parser.Parse_Program (Tokens, Root);
          WACC.AST.Print (Root);
       end if;
    end Compile;
@@ -132,7 +132,7 @@ begin
       --  Link (Object_File, Executable_File);
       --  Ada.Directories.Delete_File (Object_File);
    exception
-      when E : AAA.Processes.Child_Error | WACC.Lexer.Lex_Error =>
+      when E : AAA.Processes.Child_Error | WACC.Lexer.Lex_Error | WACC.Parser.Parse_Error =>
          Delete_If_Exists (Preprocessed_File);
          Delete_If_Exists (Assembly_File);
          Delete_If_Exists (Object_File);

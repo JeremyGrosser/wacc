@@ -33,7 +33,7 @@ package body WACC.AST is
       Indent;
       Log (This.Typ'Image);
       case This.Typ is
-         when T_Constant =>
+         when N_Constant =>
             Log (This.Int'Image);
       end case;
       Dedent;
@@ -47,7 +47,7 @@ package body WACC.AST is
       Indent;
       Log (This.Typ'Image);
       case This.Typ is
-         when T_Return =>
+         when N_Return =>
             if This.Exp /= null then
                Print (This.Exp.all);
             else

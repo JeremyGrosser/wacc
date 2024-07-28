@@ -1,6 +1,6 @@
 pragma Style_Checks ("M120");
 with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
-with Ada.Containers.Indefinite_Vectors;
+with Ada.Containers.Vectors;
 
 package WACC.Assembly is
 
@@ -36,10 +36,11 @@ package WACC.Assembly is
             null;
       end case;
    end record;
+   type Any_Instruction is access Instruction;
 
-   package Instruction_Vectors is new Ada.Containers.Indefinite_Vectors
+   package Instruction_Vectors is new Ada.Containers.Vectors
       (Index_Type   => Natural,
-       Element_Type => Instruction);
+       Element_Type => Any_Instruction);
 
    type Function_Definition_Node is record
       Name : Identifier;
@@ -49,5 +50,8 @@ package WACC.Assembly is
    type Program_Node is record
       Function_Definition : Function_Definition_Node;
    end record;
+
+   procedure Print
+      (Node : Program_Node);
 
 end WACC.Assembly;

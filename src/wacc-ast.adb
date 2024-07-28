@@ -7,12 +7,13 @@ package body WACC.AST is
    procedure Log
       (Str : String)
    is
+      use Ada.Text_IO;
    begin
       for I in 1 .. Indent_Level loop
-         Ada.Text_IO.Put (' ');
+         Put (Standard_Error, ' ');
       end loop;
-      Ada.Text_IO.Put (Ada.Text_IO.Standard_Error, Str);
-      Ada.Text_IO.New_Line (Ada.Text_IO.Standard_Error);
+      Put (Standard_Error, Str);
+      New_Line (Standard_Error);
    end Log;
 
    procedure Indent is

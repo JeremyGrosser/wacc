@@ -12,6 +12,7 @@ with WACC.Lexer;
 with WACC.AST;
 with WACC.Parser;
 with WACC.Assembly;
+with WACC.Codegen;
 
 procedure Main is
    package CLI renames Ada.Command_Line;
@@ -33,17 +34,22 @@ procedure Main is
        Lex, Parse, Codegen : Boolean)
    is
       pragma Unreferenced (Assembly_File);
-      pragma Unreferenced (Codegen);
       Tokens : WACC.Lexer.Token_List;
-      Root   : WACC.AST.Program_Node;
+      Tree   : WACC.AST.Program_Node;
+      Asm    : WACC.Assembly.Program_Node;
    begin
-      if Lex or else Parse then
+      if Lex or else Parse or else Codegen then
          WACC.Lexer.Lex (Preprocessed_File, Tokens);
       end if;
 
-      if Parse then
-         WACC.Parser.Parse_Program (Tokens, Root);
-         WACC.AST.Print (Root);
+      if Parse or else Codegen then
+         WACC.Parser.Parse_Program (Tokens, Tree);
+         --  WACC.AST.Print (Tree);
+      end if;
+
+      if Codegen then
+         WACC.Codegen.Generate (Tree, Asm);
+         WACC.Assembly.Print (Asm);
       end if;
    end Compile;
 

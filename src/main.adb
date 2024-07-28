@@ -86,7 +86,8 @@ procedure Main is
    end Delete_If_Exists;
 
    Input_File_Arg : Natural := 0;
-   Should_Lex, Should_Parse, Should_Codegen : Boolean := False;
+   Should_Lex, Should_Parse, Should_Codegen : Boolean := True;
+   --  always true after chapter 1 complete
 begin
    CLI.Set_Exit_Status (0);
    for I in 1 .. CLI.Argument_Count loop

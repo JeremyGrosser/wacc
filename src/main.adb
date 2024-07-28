@@ -10,6 +10,7 @@ with AAA.Processes;
 
 with WACC.Lexer;
 with WACC.AST;
+with WACC.Parser;
 
 procedure Main is
    package CLI renames Ada.Command_Line;
@@ -31,15 +32,17 @@ procedure Main is
        Lex, Parse, Codegen : Boolean)
    is
       pragma Unreferenced (Assembly_File);
-      pragma Unreferenced (Parse);
       pragma Unreferenced (Codegen);
       Tokens : WACC.Lexer.Token_List;
+      Root   : WACC.AST.Program_Node;
    begin
       if Lex then
          WACC.Lexer.Lex (Preprocessed_File, Tokens);
-         for T of Tokens loop
-            Ada.Text_IO.Put_Line (T'Image);
-         end loop;
+      end if;
+
+      if Parse then
+         WACC.Parser.Parse (Tokens, Root);
+         WACC.AST.Print (Root);
       end if;
    end Compile;
 

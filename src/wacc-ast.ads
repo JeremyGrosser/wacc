@@ -1,7 +1,7 @@
 with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 
 package WACC.AST
-   with Preelaborate
+   with Elaborate_Body
 is
 
    --  program = Program(function_definition)
@@ -23,7 +23,7 @@ is
             Int : Integer;
       end case;
    end record;
-   type Any_Exp_Node is not null access Exp_Node'Class;
+   type Any_Exp_Node is access Exp_Node;
 
    type Statement_Type is
       (T_Return);
@@ -35,7 +35,7 @@ is
             Exp : Any_Exp_Node;
       end case;
    end record;
-   type Any_Statement_Node is not null access Statement_Node'Class;
+   type Any_Statement_Node is access Statement_Node;
 
    type Function_Definition_Node is new Node with record
       Name  : Identifier;
@@ -45,5 +45,8 @@ is
    type Program_Node is new Node with record
       Function_Definition : Function_Definition_Node;
    end record;
+
+   procedure Print
+      (This : Program_Node);
 
 end WACC.AST;

@@ -1,32 +1,36 @@
-with Ada.Text_IO;
+with WACC.IO;
 
 package body WACC.Assembly is
 
    Indent_Level : Natural := 0;
+   File : WACC.IO.Writer;
 
-   procedure Log
+   procedure Write
       (Str : String)
    is
-      use Ada.Text_IO;
    begin
-      Put (Standard_Error, Str);
-   end Log;
+      WACC.IO.Put (File, Str);
+   end Write;
 
-   procedure Log
+   procedure Write
+      (Ch : Character)
+   is
+   begin
+      WACC.IO.Put (File, Ch);
+   end Write;
+
+   procedure Write
       (N : Integer)
    is
-      package Int_IO is new Ada.Text_IO.Integer_IO (Integer);
    begin
-      Int_IO.Default_Width := 0;
-      Int_IO.Put (Ada.Text_IO.Standard_Error, N);
-   end Log;
+      WACC.IO.Put (File, N);
+   end Write;
 
    procedure New_Line is
-      use Ada.Text_IO;
    begin
-      New_Line (Standard_Error);
+      Write (ASCII.LF);
       for I in 1 .. Indent_Level loop
-         Put (Standard_Error, "    ");
+         Write ("    ");
       end loop;
    end New_Line;
 
@@ -46,10 +50,10 @@ package body WACC.Assembly is
    begin
       case This.Typ is
          when Imm =>
-            Log ("#");
-            Log (This.Int);
+            Write ("$");
+            Write (This.Int);
          when Register =>
-            Log ("eax");
+            Write ("%eax");
       end case;
    end Print;
 
@@ -59,20 +63,25 @@ package body WACC.Assembly is
    begin
       case This.Typ is
          when Mov =>
-            Log ("mov ");
-            Print (This.Dst.all);
-            Log (", ");
+            Write ("mov ");
             Print (This.Src.all);
+            Write (", ");
+            Print (This.Dst.all);
          when Ret =>
-            Log ("ret");
+            Write ("ret");
       end case;
    end Print;
 
    procedure Print
       (This : Function_Definition_Node)
    is
+      Name : constant String := To_String (This.Name);
    begin
-      Log (To_String (This.Name) & ":");
+      Write (".globl ");
+      Write (Name);
+      New_Line;
+      Write (Name);
+      Write (':');
       Indent;
       for Insn of This.Instructions loop
          New_Line;
@@ -82,10 +91,16 @@ package body WACC.Assembly is
    end Print;
 
    procedure Print
-      (Node : Program_Node)
+      (Node     : Program_Node;
+       Filename : String)
    is
    begin
+      WACC.IO.Open (File, Filename);
       Print (Node.Function_Definition);
+      New_Line;
+      Write (".section .note.GNU-stack,"""",@progbits");
+      New_Line;
+      WACC.IO.Close (File);
    end Print;
 
 end WACC.Assembly;

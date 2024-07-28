@@ -33,7 +33,6 @@ procedure Main is
       (Preprocessed_File, Assembly_File : String;
        Lex, Parse, Codegen : Boolean)
    is
-      pragma Unreferenced (Assembly_File);
       Tokens : WACC.Lexer.Token_List;
       Tree   : WACC.AST.Program_Node;
       Asm    : WACC.Assembly.Program_Node;
@@ -49,7 +48,7 @@ procedure Main is
 
       if Codegen then
          WACC.Codegen.Generate (Tree, Asm);
-         WACC.Assembly.Print (Asm);
+         WACC.Assembly.Print (Asm, Assembly_File);
       end if;
    end Compile;
 
@@ -134,10 +133,10 @@ begin
          Parse    => Should_Parse,
          Codegen  => Should_Codegen);
       Ada.Directories.Delete_File (Preprocessed_File);
-      --  Assemble (Assembly_File, Object_File);
-      --  Ada.Directories.Delete_File (Assembly_File);
-      --  Link (Object_File, Executable_File);
-      --  Ada.Directories.Delete_File (Object_File);
+      Assemble (Assembly_File, Object_File);
+      Ada.Directories.Delete_File (Assembly_File);
+      Link (Object_File, Executable_File);
+      Ada.Directories.Delete_File (Object_File);
    exception
       when E : AAA.Processes.Child_Error | WACC.Lexer.Lex_Error | WACC.Parser.Parse_Error =>
          Delete_If_Exists (Preprocessed_File);

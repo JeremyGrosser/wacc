@@ -50,7 +50,7 @@ package body WACC.IO is
        Filename : String)
    is
    begin
-      TIO.Open
+      TIO.Create
          (File => File.Output,
           Mode => TIO.Out_File,
           Name => Filename,
@@ -76,6 +76,15 @@ package body WACC.IO is
    is
    begin
       TIO.Put (File.Output, Ch);
+   end Put;
+
+   procedure Put
+      (File : in out Writer;
+       N : Integer)
+   is
+      package Int_IO is new Ada.Text_IO.Integer_IO (Integer);
+   begin
+      Int_IO.Put (File.Output, N, Width => 0);
    end Put;
 
    procedure Put

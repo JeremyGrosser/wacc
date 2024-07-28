@@ -58,6 +58,11 @@ is
        Str  : String)
    with Pre => Is_Open (File);
 
+   procedure Put
+      (File : in out Writer;
+       N : Integer)
+   with Pre => Is_Open (File);
+
    procedure Close
       (File : in out Writer)
    with Pre => Is_Open (File),

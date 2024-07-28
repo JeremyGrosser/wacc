@@ -52,6 +52,7 @@ package WACC.Assembly is
    end record;
 
    procedure Print
-      (Node : Program_Node);
+      (Node : Program_Node;
+       Filename : String);
 
 end WACC.Assembly;

@@ -1,5 +1,6 @@
 pragma Style_Checks ("M120");
 with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
+with Ada.Unchecked_Deallocation;
 with Ada.Containers.Vectors;
 with WACC.TACKY;
 
@@ -16,6 +17,7 @@ package WACC.Assembly is
    --  reg = AX | R10
 
    subtype Identifier is Unbounded_String;
+   subtype Stack_Offset is Long_Integer range Long_Integer'First .. 4;
 
    type Reg_Node_Type is (A_AX, A_R10);
    type Reg_Node
@@ -35,10 +37,11 @@ package WACC.Assembly is
          when A_Pseudo =>
             Name : Identifier;
          when A_Stack =>
-            Stack_Int : Long_Integer;
+            Stack_Int : Stack_Offset;
       end case;
    end record;
    type Any_Operand_Node is access Operand_Node;
+   procedure Free is new Ada.Unchecked_Deallocation (Operand_Node, Any_Operand_Node);
 
    type Unary_Operator_Type is (A_Neg, A_Not);
    type Unary_Operator_Node
@@ -82,7 +85,6 @@ package WACC.Assembly is
        Asm  : out Program_Node);
 
    procedure Print
-      (Node : Program_Node;
-       Filename : String);
+      (Node : Program_Node);
 
 end WACC.Assembly;

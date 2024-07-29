@@ -52,8 +52,10 @@ procedure Main is
                --  WACC.TACKY.Print (TAC);
             when Codegen =>
                WACC.Assembly.Generate (TAC, Asm);
+               --  WACC.Assembly.Print (Asm);
             when Final =>
-               WACC.Assembly.Print (Asm, Assembly_File);
+               null;
+               --  WACC.Assembly.Print (Asm, Assembly_File);
          end case;
       end loop;
    end Compile;

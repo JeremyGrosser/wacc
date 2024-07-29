@@ -65,10 +65,33 @@ useful for optimization passes later.
 This chapter adds the first two character `--` token to the lexer, even though
 we're not adding it to the AST yet. Rather than adding a single character
 lookahead to the IO package, I allow the `Advance` method to take a negative
-`Count` argument. This way, I can readahead as far as I like and only rewind
-the cursor if needed.
+`Count` argument. I think this keeps the IO interface simpler.
 
 Once again, translating ASDL to record types was pleasant. After adding the new
 node types to the AST, the compiler happily provided errors about missing cases
 in the parser and codegen packages. Very useful for figuring out what code
 needs to be updated.
+
+Three Address Code is a new concept for me. This is where the book diverges
+from the interpreters I've written where everything just gets shoved into a
+stack machine. It reminds me of SSA (Static Single Assignment) which I've read
+about in the LLVM docs.
+
+I had to delete the existing assembly codegen to make room for this new TACKY
+stage. I wonder if this means every new compiler pass will force a refactor of
+the subsequent passes or if this is just a particularly disruptive one.
+
+Dealing with three or four different tree representations makes me glad I put
+them in separate package namespaces and avoided `use` clauses. If we add a lot
+more ASDL representations, I'm definitely going to want to take time to write
+an ASDL to Ada compiler. The pretty-printing bits are getting especially
+repetitive.
+
+The note about hardware register aliases on page 40 makes me wish that they
+hadn't picked the x64 ISA to target. There's just so much awkward legacy stuff
+there. Further, this confusion of register sizes reminds me of C's weak type
+system. No doubt this will make things *interesting* later on.
+
+The tables on page 41 make it pretty clear how TACKY translates to the Assembly
+AST. I'm not sure I could have come up with that mapping on my own, but maybe
+it'll make more sense after I've implemented the whole book.

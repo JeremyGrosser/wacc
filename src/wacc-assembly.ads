@@ -17,7 +17,7 @@ package WACC.Assembly is
    --  reg = AX | R10
 
    subtype Identifier is Unbounded_String;
-   subtype Stack_Offset is Long_Integer range Long_Integer'First .. 4;
+   subtype Stack_Offset is Integer range Integer'First .. 4;
 
    type Reg_Node_Type is (A_AX, A_R10);
    type Reg_Node

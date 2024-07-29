@@ -13,7 +13,6 @@ with WACC.AST;
 with WACC.Parser;
 with WACC.TACKY;
 with WACC.Assembly;
-with WACC.Codegen;
 
 procedure Main is
    package CLI renames Ada.Command_Line;
@@ -52,7 +51,7 @@ procedure Main is
                WACC.TACKY.Generate (Tree, TAC);
                --  WACC.TACKY.Print (TAC);
             when Codegen =>
-               WACC.Codegen.Generate (Tree, Asm);
+               WACC.Assembly.Generate (TAC, Asm);
             when Final =>
                WACC.Assembly.Print (Asm, Assembly_File);
          end case;

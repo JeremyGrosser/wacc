@@ -30,30 +30,32 @@ procedure Main is
       Status := AAA.Processes.Run (Command_Line => Args);
    end Preprocess;
 
+   type Compile_Stage is (Lex, Parse, Tacky, Codegen);
+
    procedure Compile
       (Preprocessed_File, Assembly_File : String;
-       Lex, Parse, Codegen : Boolean)
+       Stage : Compile_Stage)
    is
       Tokens : WACC.Lexer.Token_List;
       Tree   : WACC.AST.Program_Node;
       TAC    : WACC.TACKY.Program_Node;
       Asm    : WACC.Assembly.Program_Node;
    begin
-      if Lex then
-         WACC.Lexer.Lex (Preprocessed_File, Tokens);
-      end if;
-
-      if Parse then
-         WACC.Parser.Parse_Program (Tokens, Tree);
-         WACC.AST.Print (Tree);
-      end if;
-
-      if Codegen then
-         WACC.TACKY.Generate (Tree, TAC);
-         WACC.TACKY.Print (TAC);
-         WACC.Codegen.Generate (Tree, Asm);
-         WACC.Assembly.Print (Asm, Assembly_File);
-      end if;
+      for S in Compile_Stage'First .. Stage loop
+         case S is
+            when Lex =>
+               WACC.Lexer.Lex (Preprocessed_File, Tokens);
+            when Parse =>
+               WACC.Parser.Parse_Program (Tokens, Tree);
+               --  WACC.AST.Print (Tree);
+            when Tacky =>
+               WACC.TACKY.Generate (Tree, TAC);
+               --  WACC.TACKY.Print (TAC);
+            when Codegen =>
+               WACC.Codegen.Generate (Tree, Asm);
+               WACC.Assembly.Print (Asm, Assembly_File);
+         end case;
+      end loop;
    end Compile;
 
    procedure Assemble
@@ -90,8 +92,7 @@ procedure Main is
    end Delete_If_Exists;
 
    Input_File_Arg : Natural := 0;
-   Should_Lex, Should_Parse, Should_Codegen : Boolean := False;
-   --  always true after chapter 1 complete
+   Stage : Compile_Stage := Compile_Stage'Last;
 begin
    CLI.Set_Exit_Status (0);
    for I in 1 .. CLI.Argument_Count loop
@@ -100,14 +101,13 @@ begin
       begin
          if Arg'Length > 2 and then Arg (1 .. 2) = "--" then
             if Arg (3 .. Arg'Last) = "lex" then
-               Should_Lex := True;
+               Stage := Lex;
             elsif Arg (3 .. Arg'Last) = "parse" then
-               Should_Lex := True;
-               Should_Parse := True;
+               Stage := Parse;
+            elsif Arg (3 .. Arg'Last) = "tacky" then
+               Stage := Tacky;
             elsif Arg (3 .. Arg'Last) = "codegen" then
-               Should_Lex := True;
-               Should_Parse := True;
-               Should_Codegen := True;
+               Stage := Codegen;
             end if;
          else
             Input_File_Arg := I;
@@ -118,7 +118,7 @@ begin
    if Input_File_Arg = 0 then
       Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error,
          "Usage: wacc" &
-         " [--lex] [--parse] [--codegen] " &
+         " [--lex] [--parse] [--tacky] [--codegen] " &
          "<input file>");
       CLI.Set_Exit_Status (1);
       return;
@@ -136,12 +136,9 @@ begin
       Executable_File : constant String := Basename;
    begin
       Preprocess (Input_File, Preprocessed_File);
-      Compile (Preprocessed_File, Assembly_File,
-         Lex      => Should_Lex,
-         Parse    => Should_Parse,
-         Codegen  => Should_Codegen);
+      Compile (Preprocessed_File, Assembly_File, Stage);
       Ada.Directories.Delete_File (Preprocessed_File);
-      if Should_Lex and then Should_Parse and then Should_Codegen then
+      if Stage = Compile_Stage'Last then
          Assemble (Assembly_File, Object_File);
          Ada.Directories.Delete_File (Assembly_File);
          Link (Object_File, Executable_File);

@@ -59,3 +59,15 @@ generator.
 Codegen went suprisingly smoothly. Having a separate data structure for
 assembly seems like overkill at this point, but I can see how it might be
 useful for optimization passes later.
+
+## Chapter 2: Unary Operators
+This chapter adds the first two character `--` token to the lexer, even though
+we're not adding it to the AST yet. Rather than adding a single character
+lookahead to the IO package, I allow the `Advance` method to take a negative
+`Count` argument. This way, I can readahead as far as I like and only rewind
+the cursor if needed.
+
+Once again, translating ASDL to record types was pleasant. After adding the new
+node types to the AST, the compiler happily provided errors about missing cases
+in the parser and codegen packages. Very useful for figuring out what code
+needs to be updated.

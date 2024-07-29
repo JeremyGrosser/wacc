@@ -30,7 +30,7 @@ procedure Main is
       Status := AAA.Processes.Run (Command_Line => Args);
    end Preprocess;
 
-   type Compile_Stage is (Lex, Parse, Tacky, Codegen);
+   type Compile_Stage is (Lex, Parse, Tacky, Codegen, Final);
 
    procedure Compile
       (Preprocessed_File, Assembly_File : String;
@@ -53,6 +53,7 @@ procedure Main is
                --  WACC.TACKY.Print (TAC);
             when Codegen =>
                WACC.Codegen.Generate (Tree, Asm);
+            when Final =>
                WACC.Assembly.Print (Asm, Assembly_File);
          end case;
       end loop;
@@ -138,7 +139,7 @@ begin
       Preprocess (Input_File, Preprocessed_File);
       Compile (Preprocessed_File, Assembly_File, Stage);
       Ada.Directories.Delete_File (Preprocessed_File);
-      if Stage = Compile_Stage'Last then
+      if Stage = Final then
          Assemble (Assembly_File, Object_File);
          Ada.Directories.Delete_File (Assembly_File);
          Link (Object_File, Executable_File);

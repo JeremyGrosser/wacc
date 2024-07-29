@@ -28,7 +28,7 @@ is
 
    procedure Advance
       (File  : in out Reader;
-       Count : Positive := 1)
+       Count : Integer := 1)
    with Pre => Is_Open (File);
 
    function Next

@@ -29,7 +29,7 @@ package body WACC.IO is
 
    procedure Advance
       (File  : in out Reader;
-       Count : Positive := 1)
+       Count : Integer := 1)
    is
    begin
       File.Index := File.Index + Count;
@@ -43,7 +43,7 @@ package body WACC.IO is
    function Next
       (File : Reader)
        return Character
-   is (if File.Index <= File.Data'Last then File.Data.all (File.Index) else ASCII.NUL);
+   is (if File.Index in File.Data'Range then File.Data.all (File.Index) else ASCII.NUL);
 
    procedure Open
       (File : in out Writer;

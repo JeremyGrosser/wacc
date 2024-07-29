@@ -25,7 +25,7 @@ procedure Main is
          "gcc" & "-E" & "-P" & Input_File & "-o" & Preprocessed_File;
       Status : AAA.Processes.Result with Unreferenced;
    begin
-      Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, AAA.Strings.Flatten (Args));
+      --  Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, AAA.Strings.Flatten (Args));
       Status := AAA.Processes.Run (Command_Line => Args);
    end Preprocess;
 
@@ -37,11 +37,11 @@ procedure Main is
       Tree   : WACC.AST.Program_Node;
       Asm    : WACC.Assembly.Program_Node;
    begin
-      if Lex or else Parse or else Codegen then
+      if Lex then
          WACC.Lexer.Lex (Preprocessed_File, Tokens);
       end if;
 
-      if Parse or else Codegen then
+      if Parse then
          WACC.Parser.Parse_Program (Tokens, Tree);
          --  WACC.AST.Print (Tree);
       end if;
@@ -60,7 +60,7 @@ procedure Main is
          "gcc" & "-c" & Assembly_File & "-o" & Object_File;
       Status : AAA.Processes.Result with Unreferenced;
    begin
-      Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, AAA.Strings.Flatten (Args));
+      --  Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, AAA.Strings.Flatten (Args));
       Status := AAA.Processes.Run (Command_Line => Args);
    end Assemble;
 
@@ -72,7 +72,7 @@ procedure Main is
          "gcc" & Object_File & "-o" & Executable_File;
       Status : AAA.Processes.Result with Unreferenced;
    begin
-      Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, AAA.Strings.Flatten (Args));
+      --  Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, AAA.Strings.Flatten (Args));
       Status := AAA.Processes.Run (Command_Line => Args);
    end Link;
 
@@ -86,7 +86,7 @@ procedure Main is
    end Delete_If_Exists;
 
    Input_File_Arg : Natural := 0;
-   Should_Lex, Should_Parse, Should_Codegen : Boolean := True;
+   Should_Lex, Should_Parse, Should_Codegen : Boolean := False;
    --  always true after chapter 1 complete
 begin
    CLI.Set_Exit_Status (0);
@@ -98,8 +98,11 @@ begin
             if Arg (3 .. Arg'Last) = "lex" then
                Should_Lex := True;
             elsif Arg (3 .. Arg'Last) = "parse" then
+               Should_Lex := True;
                Should_Parse := True;
             elsif Arg (3 .. Arg'Last) = "codegen" then
+               Should_Lex := True;
+               Should_Parse := True;
                Should_Codegen := True;
             end if;
          else
@@ -134,10 +137,12 @@ begin
          Parse    => Should_Parse,
          Codegen  => Should_Codegen);
       Ada.Directories.Delete_File (Preprocessed_File);
-      Assemble (Assembly_File, Object_File);
-      Ada.Directories.Delete_File (Assembly_File);
-      Link (Object_File, Executable_File);
-      Ada.Directories.Delete_File (Object_File);
+      if Should_Lex and then Should_Parse and then Should_Codegen then
+         Assemble (Assembly_File, Object_File);
+         Ada.Directories.Delete_File (Assembly_File);
+         Link (Object_File, Executable_File);
+         Ada.Directories.Delete_File (Object_File);
+      end if;
    exception
       when E : AAA.Processes.Child_Error | WACC.Lexer.Lex_Error | WACC.Parser.Parse_Error =>
          Delete_If_Exists (Preprocessed_File);
@@ -146,10 +151,10 @@ begin
          Delete_If_Exists (Executable_File);
          CLI.Set_Exit_Status (2);
          Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error,
-            Ada.Exceptions.Exception_Message (E));
+            Ada.Exceptions.Exception_Information (E));
       when E : others =>
          CLI.Set_Exit_Status (3);
          Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error,
-            Ada.Exceptions.Exception_Message (E));
+            Ada.Exceptions.Exception_Information (E));
    end;
 end Main;

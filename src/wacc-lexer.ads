@@ -16,7 +16,10 @@ is
        T_Close_Paren,
        T_Open_Brace,
        T_Close_Brace,
-       T_Semicolon);
+       T_Semicolon,
+       T_Dash,
+       T_Dash_Dash,
+       T_Tilde);
 
    type Token is record
       Typ : Token_Type;

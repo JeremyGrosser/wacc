@@ -63,6 +63,21 @@ package body WACC.Lexer is
          Token_Vectors.Append (Tokens, T);
       end Lex_Identifier;
 
+      function Match
+         (Str : String)
+         return Boolean
+      is
+      begin
+         for I in Str'Range loop
+            if IO.Next (File) /= Str (I) then
+               IO.Advance (File, -(I - Str'First));
+               return False;
+            end if;
+            IO.Advance (File);
+         end loop;
+         return True;
+      end Match;
+
       Ch : Character;
    begin
       IO.Open (File, Input_File);
@@ -74,6 +89,12 @@ package body WACC.Lexer is
             Lex_Integer;
          elsif Ch in 'a' .. 'z' | 'A' .. 'Z' | '_' then
             Lex_Identifier;
+         elsif Match ("--") then
+            Token_Vectors.Append (Tokens, (Typ => T_Dash_Dash, others => <>));
+         elsif Ch = '-' then
+            Add_Single (T_Dash);
+         elsif Ch = '~' then
+            Add_Single (T_Tilde);
          elsif Ch = '(' then
             Add_Single (T_Open_Paren);
          elsif Ch = ')' then

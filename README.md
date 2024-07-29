@@ -1,7 +1,7 @@
 # Writing a C Compiler (Ada implementation)
 
 Book: https://nostarch.com/writing-c-compiler  
-Author site: https://norasandler.com/book/
+Author site: https://norasandler.com/book/  
 Ada forum thread: https://forum.ada-lang.io/t/writing-a-c-compiler/1024
 
 ## Chapter 1: A Minimal Compiler

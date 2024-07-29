@@ -6,45 +6,49 @@ package WACC.Assembly is
 
    --  program = Program(function_definition)
    --  function_definition = Function(identifier name, instruction* instructions)
-   --  instruction = Mov(operand src, operand dst) | Ret
-   --  operand = Imm(int) | Register
+   --  instruction = Mov(operand src, operand dst)
+   --              | Unary(unary_operator, operand)
+   --              | AllocateStack(int)
+   --              | Ret
+   --  unary_operator = Neg | Not
+   --  operand = Imm(int) | Reg(reg) | Pseudo(identifier) | Stack(int)
+   --  reg = AX | R10
 
    subtype Identifier is Unbounded_String;
 
-   type Operand_Type is (Imm, Register);
-   type Operand
+   type Operand_Type is (A_Imm, A_Register);
+   type Operand_Node
       (Typ : Operand_Type)
    is record
       case Typ is
-         when Imm =>
+         when A_Imm =>
             Int : Long_Integer;
-         when Register =>
+         when A_Register =>
             null;
       end case;
    end record;
-   type Any_Operand is access Operand;
+   type Any_Operand_Node is access Operand_Node;
 
-   type Instruction_Type is (Mov, Ret);
-
-   type Instruction
+   type Instruction_Type is (A_Mov, A_Ret);
+   type Instruction_Node
       (Typ : Instruction_Type)
    is record
       case Typ is
-         when Mov =>
-            Src, Dst : Any_Operand;
-         when Ret =>
+         when A_Mov =>
+            Src, Dst : Any_Operand_Node;
+         when A_Ret =>
             null;
       end case;
    end record;
-   type Any_Instruction is access Instruction;
+   type Any_Instruction_Node is access Instruction_Node;
 
-   package Instruction_Vectors is new Ada.Containers.Vectors
+   package Instruction_Node_Vectors is new Ada.Containers.Vectors
       (Index_Type   => Natural,
-       Element_Type => Any_Instruction);
+       Element_Type => Any_Instruction_Node);
 
    type Function_Definition_Node is record
       Name : Identifier;
-      Instructions : Instruction_Vectors.Vector;
+      Instructions : Instruction_Node_Vectors.Vector;
    end record;
 
    type Program_Node is record

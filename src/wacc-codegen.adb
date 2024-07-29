@@ -2,13 +2,13 @@ package body WACC.Codegen is
 
    function Generate
       (Tree : WACC.AST.Exp_Node)
-      return WACC.Assembly.Any_Operand
+      return WACC.Assembly.Any_Operand_Node
    is
    begin
       case Tree.Typ is
          when WACC.AST.N_Constant =>
-            return new WACC.Assembly.Operand'
-               (Typ => WACC.Assembly.Imm,
+            return new WACC.Assembly.Operand_Node'
+               (Typ => WACC.Assembly.A_Imm,
                 Int => Tree.Int);
          when WACC.AST.N_Unary =>
             return null; --  TODO
@@ -17,21 +17,21 @@ package body WACC.Codegen is
 
    procedure Generate
       (Tree : WACC.AST.Statement_Node;
-       Asm  : in out WACC.Assembly.Instruction_Vectors.Vector)
+       Asm  : in out WACC.Assembly.Instruction_Node_Vectors.Vector)
    is
-      use WACC.Assembly.Instruction_Vectors;
-      Insn : WACC.Assembly.Any_Instruction;
+      use WACC.Assembly.Instruction_Node_Vectors;
+      Insn : WACC.Assembly.Any_Instruction_Node;
    begin
       case Tree.Typ is
          when WACC.AST.N_Return =>
-            Insn := new WACC.Assembly.Instruction'
-               (Typ => WACC.Assembly.Mov,
+            Insn := new WACC.Assembly.Instruction_Node'
+               (Typ => WACC.Assembly.A_Mov,
                 Src => Generate (Tree.Exp.all),
-                Dst => new WACC.Assembly.Operand'
-                  (Typ => WACC.Assembly.Register));
+                Dst => new WACC.Assembly.Operand_Node'
+                  (Typ => WACC.Assembly.A_Register));
             Append (Asm, Insn);
-            Insn := new WACC.Assembly.Instruction'
-               (Typ => WACC.Assembly.Ret);
+            Insn := new WACC.Assembly.Instruction_Node'
+               (Typ => WACC.Assembly.A_Ret);
             Append (Asm, Insn);
       end case;
    end Generate;

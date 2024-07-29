@@ -45,37 +45,37 @@ package body WACC.Assembly is
    end Dedent;
 
    procedure Print
-      (This : Operand)
+      (Node : Operand_Node)
    is
    begin
-      case This.Typ is
-         when Imm =>
+      case Node.Typ is
+         when A_Imm =>
             Write ("$");
-            Write (This.Int);
-         when Register =>
+            Write (Node.Int);
+         when A_Register =>
             Write ("%eax");
       end case;
    end Print;
 
    procedure Print
-      (This : Instruction)
+      (Node : Instruction_Node)
    is
    begin
-      case This.Typ is
-         when Mov =>
+      case Node.Typ is
+         when A_Mov =>
             Write ("movl ");
-            Print (This.Src.all);
+            Print (Node.Src.all);
             Write (", ");
-            Print (This.Dst.all);
-         when Ret =>
+            Print (Node.Dst.all);
+         when A_Ret =>
             Write ("ret");
       end case;
    end Print;
 
    procedure Print
-      (This : Function_Definition_Node)
+      (Node : Function_Definition_Node)
    is
-      Name : constant String := To_String (This.Name);
+      Name : constant String := To_String (Node.Name);
    begin
       Write ("    .globl ");
       Write (Name);
@@ -83,7 +83,7 @@ package body WACC.Assembly is
       Write (Name);
       Write (':');
       Indent;
-      for Insn of This.Instructions loop
+      for Insn of Node.Instructions loop
          New_Line;
          Print (Insn.all);
       end loop;

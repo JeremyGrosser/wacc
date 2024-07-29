@@ -10,6 +10,8 @@ package body WACC.Codegen is
             return new WACC.Assembly.Operand'
                (Typ => WACC.Assembly.Imm,
                 Int => Tree.Int);
+         when WACC.AST.N_Unary =>
+            return null; --  TODO
       end case;
    end Generate;
 

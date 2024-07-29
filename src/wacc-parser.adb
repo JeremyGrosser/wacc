@@ -51,7 +51,7 @@ package body WACC.Parser is
                   if Ch not in '0' .. '9' then
                      raise Program_Error with "Expected 0 .. 9 in int constant, got '" & Ch & "'";
                   end if;
-                  Node.Int := Node.Int * 10 + Character'Pos (Ch) - Character'Pos ('0');
+                  Node.Int := Node.Int * 10 + Long_Integer (Character'Pos (Ch) - Character'Pos ('0'));
                end loop;
                Delete_First (Input);
             when WACC.Lexer.T_Dash | WACC.Lexer.T_Tilde =>
@@ -61,11 +61,7 @@ package body WACC.Parser is
             when WACC.Lexer.T_Open_Paren =>
                Delete_First (Input);
                Parse_Exp (Node);
-               if Tok.Typ = WACC.Lexer.T_Close_Paren then
-                  Delete_First (Input);
-               else
-                  raise Parse_Error with "Expected ')' after exp";
-               end if;
+               Expect (WACC.Lexer.T_Close_Paren);
             when others =>
                raise Parse_Error with "Unexpected token in exp: " & Tok.Typ'Image;
          end case;

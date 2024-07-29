@@ -32,7 +32,7 @@ is
    is record
       case Typ is
          when N_Constant =>
-            Int : Integer;
+            Int : Long_Integer;
          when N_Unary =>
             Unary_Operator : Any_Unary_Operator_Node;
             Exp : Any_Exp_Node;

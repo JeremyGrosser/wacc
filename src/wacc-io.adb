@@ -80,9 +80,9 @@ package body WACC.IO is
 
    procedure Put
       (File : in out Writer;
-       N : Integer)
+       N : Long_Integer)
    is
-      package Int_IO is new Ada.Text_IO.Integer_IO (Integer);
+      package Int_IO is new Ada.Text_IO.Integer_IO (Long_Integer);
    begin
       Int_IO.Put (File.Output, N, Width => 0);
    end Put;

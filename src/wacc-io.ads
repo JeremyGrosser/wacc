@@ -60,7 +60,7 @@ is
 
    procedure Put
       (File : in out Writer;
-       N : Integer)
+       N : Long_Integer)
    with Pre => Is_Open (File);
 
    procedure Close

@@ -17,7 +17,7 @@ package WACC.Assembly is
    is record
       case Typ is
          when Imm =>
-            Int : Integer;
+            Int : Long_Integer;
          when Register =>
             null;
       end case;

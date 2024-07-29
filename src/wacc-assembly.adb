@@ -20,7 +20,7 @@ package body WACC.Assembly is
    end Write;
 
    procedure Write
-      (N : Integer)
+      (N : Long_Integer)
    is
    begin
       WACC.IO.Put (File, N);

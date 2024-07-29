@@ -11,6 +11,7 @@ with AAA.Processes;
 with WACC.Lexer;
 with WACC.AST;
 with WACC.Parser;
+with WACC.Tacky;
 with WACC.Assembly;
 with WACC.Codegen;
 

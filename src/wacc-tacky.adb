@@ -92,94 +92,92 @@ package body WACC.TACKY is
       Generate (Tree.Function_Definition, Node.Function_Definition);
    end Generate;
 
-   --  Pretty printer
-   Indent_Level : Natural := 0;
-
-   procedure Write
-      (Str : String)
-   is
-   begin
-      for I in 1 .. Indent_Level loop
-         Ada.Text_IO.Put (Ada.Text_IO.Standard_Error, ' ');
-      end loop;
-      Ada.Text_IO.Put (Ada.Text_IO.Standard_Error, Str);
-      Ada.Text_IO.New_Line (Ada.Text_IO.Standard_Error);
-   end Write;
-
-   procedure Indent is
-   begin
-      Indent_Level := Indent_Level + 1;
-   end Indent;
-
-   procedure Dedent is
-   begin
-      Indent_Level := Indent_Level - 1;
-   end Dedent;
-
-   procedure Print
-      (Node : WACC.TACKY.Unary_Operator_Node)
-   is
-   begin
-      Write ("Unary_Operator");
-      Indent;
-      Write (Node.Typ'Image);
-      Dedent;
-   end Print;
-
-   procedure Print
-      (Node : WACC.TACKY.Val_Node)
-   is
-   begin
-      Write ("Val");
-      Indent;
-      Write (Node.Typ'Image);
-      case Node.Typ is
-         when TA_Constant =>
-            Write (Node.Int'Image);
-         when TA_Var =>
-            Write ("Name = " & To_String (Node.Name));
-      end case;
-      Dedent;
-   end Print;
-
-   procedure Print
-      (Node : WACC.TACKY.Instruction_Node)
-   is
-   begin
-      Write ("Instruction");
-      Indent;
-      Write (Node.Typ'Image);
-      case Node.Typ is
-         when TA_Return =>
-            Print (Node.Val.all);
-         when TA_Unary =>
-            Write ("Unary_Operator =");
-            Print (Node.Unary_Operator.all);
-            Write ("Dst = ");
-            Print (Node.Dst.all);
-            Write ("Src = ");
-            Print (Node.Src.all);
-      end case;
-      Dedent;
-   end Print;
-
-   procedure Print
-      (Node : WACC.TACKY.Function_Definition_Node)
-   is
-   begin
-      Write ("Function_Definition");
-      Indent;
-      Write ("Name = " & To_String (Node.Name));
-      Write ("FBody = ");
-      for Insn of Node.FBody loop
-         Print (Insn.all);
-      end loop;
-      Dedent;
-   end Print;
-
    procedure Print
       (Node : WACC.TACKY.Program_Node)
    is
+      Indent_Level : Natural := 0;
+
+      procedure Write
+         (Str : String)
+      is
+      begin
+         for I in 1 .. Indent_Level loop
+            Ada.Text_IO.Put (Ada.Text_IO.Standard_Error, ' ');
+         end loop;
+         Ada.Text_IO.Put (Ada.Text_IO.Standard_Error, Str);
+         Ada.Text_IO.New_Line (Ada.Text_IO.Standard_Error);
+      end Write;
+
+      procedure Indent is
+      begin
+         Indent_Level := Indent_Level + 1;
+      end Indent;
+
+      procedure Dedent is
+      begin
+         Indent_Level := Indent_Level - 1;
+      end Dedent;
+
+      procedure Print
+         (Node : WACC.TACKY.Unary_Operator_Node)
+      is
+      begin
+         Write ("Unary_Operator");
+         Indent;
+         Write (Node.Typ'Image);
+         Dedent;
+      end Print;
+
+      procedure Print
+         (Node : WACC.TACKY.Val_Node)
+      is
+      begin
+         Write ("Val");
+         Indent;
+         Write (Node.Typ'Image);
+         case Node.Typ is
+            when TA_Constant =>
+               Write (Node.Int'Image);
+            when TA_Var =>
+               Write ("Name = " & To_String (Node.Name));
+         end case;
+         Dedent;
+      end Print;
+
+      procedure Print
+         (Node : WACC.TACKY.Instruction_Node)
+      is
+      begin
+         Write ("Instruction");
+         Indent;
+         Write (Node.Typ'Image);
+         case Node.Typ is
+            when TA_Return =>
+               Print (Node.Val.all);
+            when TA_Unary =>
+               Write ("Unary_Operator =");
+               Print (Node.Unary_Operator.all);
+               Write ("Dst = ");
+               Print (Node.Dst.all);
+               Write ("Src = ");
+               Print (Node.Src.all);
+         end case;
+         Dedent;
+      end Print;
+
+      procedure Print
+         (Node : WACC.TACKY.Function_Definition_Node)
+      is
+      begin
+         Write ("Function_Definition");
+         Indent;
+         Write ("Name = " & To_String (Node.Name));
+         Write ("FBody = ");
+         for Insn of Node.FBody loop
+            Print (Insn.all);
+         end loop;
+         Dedent;
+      end Print;
    begin
       Write ("[TACKY]");
       Indent;

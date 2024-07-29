@@ -90,9 +90,12 @@ package body WACC.AST is
       (This : Program_Node)
    is
    begin
+      Log ("[AST]");
+      Indent;
       Log ("Program");
       Indent;
       Print (This.Function_Definition);
+      Dedent;
       Dedent;
    end Print;
 

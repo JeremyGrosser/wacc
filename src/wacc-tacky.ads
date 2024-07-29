@@ -1,7 +1,8 @@
 with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 with Ada.Containers.Vectors;
+with WACC.AST;
 
-package WACC.Tacky is
+package WACC.TACKY is
 
    --  program = Program(function_definition)
    --  function_definition = Function(identifier, 1 instruction* body)
@@ -62,4 +63,11 @@ package WACC.Tacky is
       Function_Definition : Function_Definition_Node;
    end record;
 
-end WACC.Tacky;
+   procedure Generate
+      (Tree : WACC.AST.Program_Node;
+       Node : out Program_Node);
+
+   procedure Print
+      (Node : Program_Node);
+
+end WACC.TACKY;

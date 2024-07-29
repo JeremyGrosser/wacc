@@ -11,7 +11,7 @@ with AAA.Processes;
 with WACC.Lexer;
 with WACC.AST;
 with WACC.Parser;
-with WACC.Tacky;
+with WACC.TACKY;
 with WACC.Assembly;
 with WACC.Codegen;
 
@@ -36,6 +36,7 @@ procedure Main is
    is
       Tokens : WACC.Lexer.Token_List;
       Tree   : WACC.AST.Program_Node;
+      TAC    : WACC.TACKY.Program_Node;
       Asm    : WACC.Assembly.Program_Node;
    begin
       if Lex then
@@ -44,10 +45,12 @@ procedure Main is
 
       if Parse then
          WACC.Parser.Parse_Program (Tokens, Tree);
-         --  WACC.AST.Print (Tree);
+         WACC.AST.Print (Tree);
       end if;
 
       if Codegen then
+         WACC.TACKY.Generate (Tree, TAC);
+         WACC.TACKY.Print (TAC);
          WACC.Codegen.Generate (Tree, Asm);
          WACC.Assembly.Print (Asm, Assembly_File);
       end if;

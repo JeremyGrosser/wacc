@@ -95,3 +95,18 @@ system. No doubt this will make things *interesting* later on.
 The tables on page 41 make it pretty clear how TACKY translates to the Assembly
 AST. I'm not sure I could have come up with that mapping on my own, but maybe
 it'll make more sense after I've implemented the whole book.
+
+The "fixup" pass of assembly generation is awkward, mainly because I need to
+replace one instruction with two and I stored them all in a Vector, which can't
+be modified while iterating. I iterate through the vector, creating a list of
+edits and their offsets. I then iterate through the list of edits in reverse
+order and perform the inserts. It's clunky, but it works.
+
+I haven't been freeing memory anywhere up to this point. I did try to
+deallocate a node during one of the assembly passes, but this somehow led to an
+`Unbounded_String` getting set to null while still referenced. Maybe there's
+some string interning happening that I'm not aware of? In any case, I still
+feel that deallocation is unnecessary in the context of a short lived compiler
+process. Perhaps I'd feel differently if this code was getting embedded into a
+language server. If I do want to do deallocation later, I wonder if there's
+something clever I can do with storage pools to build a free list.

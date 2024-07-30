@@ -78,11 +78,17 @@ package WACC.Assembly is
       Function_Definition : Function_Definition_Node;
    end record;
 
+   Assembly_Error : exception;
+
    procedure Generate
       (Tree : WACC.TACKY.Program_Node;
        Asm  : out Program_Node);
 
    procedure Print
       (Node : Program_Node);
+
+   procedure Emit
+      (Node : Program_Node;
+       Filename : String);
 
 end WACC.Assembly;

@@ -1,6 +1,7 @@
 pragma Style_Checks ("M120");
 with Ada.Containers.Indefinite_Ordered_Maps;
 with Ada.Text_IO;
+with WACC.IO;
 
 package body WACC.Assembly is
 
@@ -186,18 +187,12 @@ package body WACC.Assembly is
    begin
       --  Pass 1: TACKY to Assembly
       Generate (Tree.Function_Definition, Asm.Function_Definition);
-      Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, "Pass 1:");
-      Print (Asm);
 
       --  Pass 2: Replacing Pseudoregisters with Stack locations
       Replace_Pseudo (Asm.Function_Definition);
-      Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, "Pass 2:");
-      Print (Asm);
 
       --  Pass 3: Stack Fixup
       Stack_Fixup (Asm.Function_Definition);
-      Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, "Pass 3:");
-      Print (Asm);
    end Generate;
 
    procedure Print
@@ -319,5 +314,147 @@ package body WACC.Assembly is
       Dedent;
       Dedent;
    end Print;
+
+   procedure Emit
+      (Node : WACC.Assembly.Program_Node;
+       Filename : String)
+   is
+      File : WACC.IO.Writer;
+
+      procedure Indent is
+      begin
+         WACC.IO.Put (File, "    ");
+      end Indent;
+
+      procedure Write
+         (Str : String)
+      is
+      begin
+         WACC.IO.Put (File, Str);
+      end Write;
+
+      procedure Write
+         (N : Long_Integer)
+      is
+      begin
+         WACC.IO.Put (File, N);
+      end Write;
+
+      procedure New_Line is
+      begin
+         WACC.IO.Put (File, ASCII.LF);
+      end New_Line;
+
+      procedure Print
+         (Node : WACC.Assembly.Reg_Node)
+      is
+      begin
+         case Node.Typ is
+            when A_AX =>
+               Write ("eax");
+            when A_R10 =>
+               Write ("r10d");
+         end case;
+      end Print;
+
+      procedure Print
+         (Node : WACC.Assembly.Operand_Node)
+      is
+      begin
+         case Node.Typ is
+            when A_Imm =>
+               Write ("$");
+               Write (Node.Imm_Int);
+            when A_Reg =>
+               Write ("%");
+               Print (Node.Reg.all);
+            when A_Stack =>
+               Write (Long_Integer (Node.Stack_Int));
+               Write ("(%rbp)");
+            when A_Pseudo =>
+               raise Assembly_Error with "Cannot emit pseudo instruction to file";
+         end case;
+      end Print;
+
+      procedure Print
+         (Node : WACC.Assembly.Unary_Operator_Node)
+      is
+      begin
+         case Node.Typ is
+            when A_Neg =>
+               Write ("negl");
+            when A_Not =>
+               Write ("notl");
+         end case;
+      end Print;
+
+      procedure Print
+         (Node : WACC.Assembly.Instruction_Node)
+      is
+      begin
+         Indent;
+         case Node.Typ is
+            when A_Mov =>
+               Write ("movl ");
+               Print (Node.Src.all);
+               Write (", ");
+               Print (Node.Dst.all);
+            when A_Unary =>
+               Print (Node.Unary_Operator.all);
+               Write (" ");
+               Print (Node.Operand.all);
+            when A_Allocate_Stack =>
+               Write ("subq $");
+               Write (Long_Integer (Node.Int));
+               Write (", %rsp");
+            when A_Ret =>
+               Write ("movq %rbp, %rsp");
+               New_Line;
+               Indent;
+               Write ("popq %rbp");
+               New_Line;
+               Indent;
+               Write ("ret");
+         end case;
+         New_Line;
+      end Print;
+
+      procedure Print
+         (Node : WACC.Assembly.Function_Definition_Node)
+      is
+         Label : constant String := To_String (Node.Name);
+      begin
+         Indent;
+         Write (".globl ");
+         Write (Label);
+         New_Line;
+
+         Write (Label);
+         Write (":");
+         New_Line;
+
+         Indent;
+         Write ("pushq %rbp");
+         New_Line;
+
+         Indent;
+         Write ("movq %rsp, %rbp");
+         New_Line;
+
+         for Insn of Node.Instructions loop
+            Print (Insn.all);
+         end loop;
+      end Print;
+   begin
+      WACC.IO.Open (File, Filename);
+
+      Print (Node.Function_Definition);
+
+      Indent;
+      Write (".section .node.GNU-stack,"""",@progbits");
+      New_Line;
+
+      WACC.IO.Close (File);
+   end Emit;
 
 end WACC.Assembly;

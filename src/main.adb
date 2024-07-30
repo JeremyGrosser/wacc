@@ -17,16 +17,31 @@ with WACC.Assembly;
 procedure Main is
    package CLI renames Ada.Command_Line;
 
+   procedure Exec
+      (Cmd : AAA.Strings.Vector)
+   is
+      Status : AAA.Processes.Result;
+   begin
+      Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, AAA.Strings.Flatten (Cmd));
+      Status := AAA.Processes.Run
+         (Command_Line     => Cmd,
+          Err_To_Out       => True,
+          Raise_On_Error   => False);
+      if Status.Exit_Code /= 0 then
+         for O of Status.Output loop
+            Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, O);
+         end loop;
+         raise Program_Error;
+      end if;
+   end Exec;
+
    procedure Preprocess
       (Input_File, Preprocessed_File : String)
    is
       use type AAA.Strings.Vector;
-      Args : constant AAA.Strings.Vector := AAA.Strings.Empty_Vector &
-         "gcc" & "-E" & "-P" & Input_File & "-o" & Preprocessed_File;
-      Status : AAA.Processes.Result with Unreferenced;
    begin
-      --  Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, AAA.Strings.Flatten (Args));
-      Status := AAA.Processes.Run (Command_Line => Args);
+      Exec (AAA.Strings.Empty_Vector &
+         "gcc" & "-E" & "-P" & Input_File & "-o" & Preprocessed_File);
    end Preprocess;
 
    type Compile_Stage is (Lex, Parse, Tacky, Codegen, Final);
@@ -49,13 +64,12 @@ procedure Main is
                --  WACC.AST.Print (Tree);
             when Tacky =>
                WACC.TACKY.Generate (Tree, TAC);
-               WACC.TACKY.Print (TAC);
+               --  WACC.TACKY.Print (TAC);
             when Codegen =>
                WACC.Assembly.Generate (TAC, Asm);
                --  WACC.Assembly.Print (Asm);
             when Final =>
-               null;
-               --  WACC.Assembly.Print (Asm, Assembly_File);
+               WACC.Assembly.Emit (Asm, Assembly_File);
          end case;
       end loop;
    end Compile;
@@ -64,24 +78,18 @@ procedure Main is
       (Assembly_File, Object_File : String)
    is
       use type AAA.Strings.Vector;
-      Args : constant AAA.Strings.Vector := AAA.Strings.Empty_Vector &
-         "gcc" & "-c" & Assembly_File & "-o" & Object_File;
-      Status : AAA.Processes.Result with Unreferenced;
    begin
-      --  Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, AAA.Strings.Flatten (Args));
-      Status := AAA.Processes.Run (Command_Line => Args);
+      Exec (AAA.Strings.Empty_Vector &
+         "gcc" & "-c" & Assembly_File & "-o" & Object_File);
    end Assemble;
 
    procedure Link
       (Object_File, Executable_File : String)
    is
       use type AAA.Strings.Vector;
-      Args : constant AAA.Strings.Vector := AAA.Strings.Empty_Vector &
-         "gcc" & Object_File & "-o" & Executable_File;
-      Status : AAA.Processes.Result with Unreferenced;
    begin
-      --  Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, AAA.Strings.Flatten (Args));
-      Status := AAA.Processes.Run (Command_Line => Args);
+      Exec (AAA.Strings.Empty_Vector &
+         "gcc" & Object_File & "-o" & Executable_File);
    end Link;
 
    procedure Delete_If_Exists
@@ -95,6 +103,7 @@ procedure Main is
 
    Input_File_Arg : Natural := 0;
    Stage : Compile_Stage := Compile_Stage'Last;
+   Keep_Files : Boolean := False;
 begin
    CLI.Set_Exit_Status (0);
    for I in 1 .. CLI.Argument_Count loop
@@ -110,6 +119,8 @@ begin
                Stage := Tacky;
             elsif Arg (3 .. Arg'Last) = "codegen" then
                Stage := Codegen;
+            elsif Arg (3 .. Arg'Last) = "keep" then
+               Keep_Files := True;
             end if;
          else
             Input_File_Arg := I;
@@ -138,20 +149,31 @@ begin
       Executable_File : constant String := Basename;
    begin
       Preprocess (Input_File, Preprocessed_File);
+
       Compile (Preprocessed_File, Assembly_File, Stage);
-      Ada.Directories.Delete_File (Preprocessed_File);
+      if not Keep_Files then
+         Ada.Directories.Delete_File (Preprocessed_File);
+      end if;
+
       if Stage = Final then
          Assemble (Assembly_File, Object_File);
-         Ada.Directories.Delete_File (Assembly_File);
+         if not Keep_Files then
+            Ada.Directories.Delete_File (Assembly_File);
+         end if;
+
          Link (Object_File, Executable_File);
-         Ada.Directories.Delete_File (Object_File);
+         if not Keep_Files then
+            Ada.Directories.Delete_File (Object_File);
+         end if;
       end if;
    exception
-      when E : AAA.Processes.Child_Error | WACC.Lexer.Lex_Error | WACC.Parser.Parse_Error =>
-         Delete_If_Exists (Preprocessed_File);
-         Delete_If_Exists (Assembly_File);
-         Delete_If_Exists (Object_File);
-         Delete_If_Exists (Executable_File);
+      when E : WACC.Lexer.Lex_Error | WACC.Parser.Parse_Error | WACC.Assembly.Assembly_Error =>
+         if not Keep_Files then
+            Delete_If_Exists (Preprocessed_File);
+            Delete_If_Exists (Assembly_File);
+            Delete_If_Exists (Object_File);
+            Delete_If_Exists (Executable_File);
+         end if;
          CLI.Set_Exit_Status (2);
          Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error,
             Ada.Exceptions.Exception_Information (E));

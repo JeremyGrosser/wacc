@@ -369,7 +369,7 @@ package body WACC.Assembly is
                Write ("%");
                Print (Node.Reg.all);
             when A_Stack =>
-               Write (Long_Integer (Node.Stack_Int));
+               Write (Long_Integer (-Node.Stack_Int));
                Write ("(%rbp)");
             when A_Pseudo =>
                raise Assembly_Error with "Cannot emit pseudo instruction to file";
@@ -405,7 +405,7 @@ package body WACC.Assembly is
                Print (Node.Operand.all);
             when A_Allocate_Stack =>
                Write ("subq $");
-               Write (Long_Integer (Node.Int));
+               Write (Long_Integer (abs Node.Int));
                Write (", %rsp");
             when A_Ret =>
                Write ("movq %rbp, %rsp");

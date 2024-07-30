@@ -181,7 +181,7 @@ package body WACC.Assembly is
 
          Prepend (Node.Instructions, new Instruction_Node'
             (Typ => A_Allocate_Stack,
-             Int => abs Integer (Next_Stack_Offset)));
+             Int => abs Integer (Next_Stack_Offset) - 4));
       end Stack_Fixup;
    begin
       --  Pass 1: TACKY to Assembly

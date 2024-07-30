@@ -100,7 +100,8 @@ The "fixup" pass of assembly generation is awkward, mainly because I need to
 replace one instruction with two and I stored them all in a Vector, which can't
 be modified while iterating. I iterate through the vector, creating a list of
 edits and their offsets. I then iterate through the list of edits in reverse
-order and perform the inserts. It's clunky, but it works.
+order and perform the inserts. It's clunky, but it works. Maybe a linked list
+or building a new copy of the Vector would be better.
 
 I haven't been freeing memory anywhere up to this point. I did try to
 deallocate a node during one of the assembly passes, but this somehow led to an
@@ -109,4 +110,4 @@ some string interning happening that I'm not aware of? In any case, I still
 feel that deallocation is unnecessary in the context of a short lived compiler
 process. Perhaps I'd feel differently if this code was getting embedded into a
 language server. If I do want to do deallocation later, I wonder if there's
-something clever I can do with storage pools to build a free list.
+something clever I can do with storage pools to free an entire tree.

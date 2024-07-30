@@ -93,6 +93,14 @@ package body WACC.Lexer is
             Token_Vectors.Append (Tokens, (Typ => T_Dash_Dash, others => <>));
          elsif Ch = '-' then
             Add_Single (T_Dash);
+         elsif Ch = '+' then
+            Add_Single (T_Plus);
+         elsif Ch = '/' then
+            Add_Single (T_Slash);
+         elsif Ch = '*' then
+            Add_Single (T_Asterisk);
+         elsif Ch = '%' then
+            Add_Single (T_Percent);
          elsif Ch = '~' then
             Add_Single (T_Tilde);
          elsif Ch = '(' then

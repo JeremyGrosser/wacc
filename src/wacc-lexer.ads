@@ -19,7 +19,11 @@ is
        T_Semicolon,
        T_Dash,
        T_Dash_Dash,
-       T_Tilde);
+       T_Tilde,
+       T_Plus,
+       T_Asterisk,
+       T_Slash,
+       T_Percent);
 
    type Token is record
       Typ : Token_Type;

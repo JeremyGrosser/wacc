@@ -49,7 +49,7 @@ procedure Main is
                --  WACC.AST.Print (Tree);
             when Tacky =>
                WACC.TACKY.Generate (Tree, TAC);
-               --  WACC.TACKY.Print (TAC);
+               WACC.TACKY.Print (TAC);
             when Codegen =>
                WACC.Assembly.Generate (TAC, Asm);
                --  WACC.Assembly.Print (Asm);

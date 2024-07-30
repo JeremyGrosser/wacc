@@ -1,6 +1,5 @@
 pragma Style_Checks ("M120");
 with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
-with Ada.Unchecked_Deallocation;
 with Ada.Containers.Vectors;
 with WACC.TACKY;
 
@@ -37,11 +36,10 @@ package WACC.Assembly is
          when A_Pseudo =>
             Name : Identifier;
          when A_Stack =>
-            Stack_Int : Stack_Offset;
+            Stack_Int : Natural;
       end case;
    end record;
    type Any_Operand_Node is access Operand_Node;
-   procedure Free is new Ada.Unchecked_Deallocation (Operand_Node, Any_Operand_Node);
 
    type Unary_Operator_Type is (A_Neg, A_Not);
    type Unary_Operator_Node
@@ -60,7 +58,7 @@ package WACC.Assembly is
             Unary_Operator : Any_Unary_Operator_Node;
             Operand : Any_Operand_Node;
          when A_Allocate_Stack =>
-            Int : Long_Integer;
+            Int : Stack_Offset;
          when A_Ret =>
             null;
       end case;

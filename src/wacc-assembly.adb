@@ -97,8 +97,7 @@ package body WACC.Assembly is
          if Node.Typ = A_Pseudo then
             declare
                use Stack_Maps;
-               Name  : constant String := To_String (Node.Name);
-               PNode : Any_Operand_Node := Node;
+               Name : constant String := To_String (Node.Name);
             begin
                if not Contains (Pseudo_Map, Name) then
                   Insert (Pseudo_Map, Name, Next_Stack_Offset);
@@ -107,7 +106,6 @@ package body WACC.Assembly is
                Node := new Operand_Node'
                   (Typ => A_Stack,
                    Stack_Int => Element (Pseudo_Map, Name));
-               Free (PNode);
             end;
          end if;
       end Replace_Pseudo;
@@ -135,6 +133,56 @@ package body WACC.Assembly is
             Replace_Pseudo (Insn.all);
          end loop;
       end Replace_Pseudo;
+
+      procedure Stack_Fixup
+         (Node : in out WACC.Assembly.Function_Definition_Node)
+      is
+         use Instruction_Node_Vectors;
+         Scratch_Reg : constant Any_Operand_Node := new Operand_Node'
+            (Typ => A_Reg, Reg => new Reg_Node'(Typ => A_R10));
+
+         type Edit is record
+            After : Natural;
+            Scratch_Mov : Any_Instruction_Node;
+         end record;
+
+         package Edit_Vectors is new Ada.Containers.Vectors
+            (Positive, Edit);
+         use Edit_Vectors;
+         Edits : Edit_Vectors.Vector;
+      begin
+         for Cursor in Iterate (Node.Instructions) loop
+            declare
+               Insn : constant Any_Instruction_Node := Element (Cursor);
+               I : constant Natural := To_Index (Cursor);
+               Scratch_Mov : Any_Instruction_Node;
+            begin
+               if Insn.Typ = A_Mov and then
+                  Insn.Src.Typ = A_Stack and then
+                  Insn.Dst.Typ = A_Stack
+               then
+                  Scratch_Mov := new Instruction_Node'
+                     (Typ => A_Mov,
+                      Src => Scratch_Reg,
+                      Dst => Insn.Dst);
+                  Insn.Dst := Scratch_Reg;
+                  Append (Edits, (After => I, Scratch_Mov => Scratch_Mov));
+               end if;
+            end;
+         end loop;
+
+         for E of reverse Edits loop
+            if E.After = Last_Index (Node.Instructions) then
+               Append (Node.Instructions, E.Scratch_Mov);
+            else
+               Insert (Node.Instructions, Before => E.After + 1, New_Item => E.Scratch_Mov);
+            end if;
+         end loop;
+
+         Prepend (Node.Instructions, new Instruction_Node'
+            (Typ => A_Allocate_Stack,
+             Int => abs Integer (Next_Stack_Offset)));
+      end Stack_Fixup;
    begin
       --  Pass 1: TACKY to Assembly
       Generate (Tree.Function_Definition, Asm.Function_Definition);
@@ -144,6 +192,11 @@ package body WACC.Assembly is
       --  Pass 2: Replacing Pseudoregisters with Stack locations
       Replace_Pseudo (Asm.Function_Definition);
       Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, "Pass 2:");
+      Print (Asm);
+
+      --  Pass 3: Stack Fixup
+      Stack_Fixup (Asm.Function_Definition);
+      Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, "Pass 3:");
       Print (Asm);
    end Generate;
 

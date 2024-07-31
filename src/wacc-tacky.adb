@@ -62,6 +62,9 @@ package body WACC.TACKY is
                   Append (Node, Insn);
                   return Insn.Dst;
                end;
+            when WACC.AST.N_Binary =>
+               --  TODO
+               raise Program_Error with "Unimplemented.";
          end case;
       end Generate;
 

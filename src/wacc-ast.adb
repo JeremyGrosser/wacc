@@ -30,6 +30,19 @@ package body WACC.AST is
       end Dedent;
 
       procedure Print
+         (This : Exp_Node);
+
+      procedure Print
+         (This : Binary_Operator_Node)
+      is
+      begin
+         Log ("Binary_Operator");
+         Indent;
+         Log (This.Typ'Image);
+         Dedent;
+      end Print;
+
+      procedure Print
          (This : Unary_Operator_Node)
       is
       begin
@@ -51,6 +64,10 @@ package body WACC.AST is
                Log (This.Int'Image);
             when N_Unary =>
                Print (This.Unary_Operator.all);
+            when N_Binary =>
+               Print (This.Left.all);
+               Print (This.Binary_Operator.all);
+               Print (This.Right.all);
          end case;
          Dedent;
       end Print;

@@ -24,7 +24,7 @@ package body WACC.Parser is
       end Expect;
 
       procedure Parse_Unop
-         (Node : in out WACC.AST.Any_Unary_Operator_Node)
+         (Node : out WACC.AST.Any_Unary_Operator_Node)
       is
          Tok : constant WACC.Lexer.Token := First_Element (Input);
       begin
@@ -39,20 +39,31 @@ package body WACC.Parser is
          Delete_First (Input);
       end Parse_Unop;
 
+      function Parse_Int
+         (Str : String)
+         return Long_Integer
+      is
+         N : Long_Integer := 0;
+      begin
+         for Ch of Str loop
+            if Ch not in '0' .. '9' then
+               raise Parse_Error with "Expected 0 .. 9 in int constant, got '" & Ch & "'";
+            end if;
+            N := N * 10 + Long_Integer (Character'Pos (Ch) - Character'Pos ('0'));
+         end loop;
+         return N;
+      end Parse_Int;
+
       procedure Parse_Exp
-         (Node : in out WACC.AST.Any_Exp_Node)
+         (Node : out WACC.AST.Any_Exp_Node)
       is
          Tok : constant WACC.Lexer.Token := First_Element (Input);
       begin
          case Tok.Typ is
             when WACC.Lexer.T_int =>
-               Node := new WACC.AST.Exp_Node'(Typ => WACC.AST.N_Constant, Int => 0);
-               for Ch of Ada.Strings.Unbounded.To_String (Tok.Literal) loop
-                  if Ch not in '0' .. '9' then
-                     raise Program_Error with "Expected 0 .. 9 in int constant, got '" & Ch & "'";
-                  end if;
-                  Node.Int := Node.Int * 10 + Long_Integer (Character'Pos (Ch) - Character'Pos ('0'));
-               end loop;
+               Node := new WACC.AST.Exp_Node'
+                  (Typ => WACC.AST.N_Constant,
+                   Int => Parse_Int (Ada.Strings.Unbounded.To_String (Tok.Literal)));
                Delete_First (Input);
             when WACC.Lexer.T_Dash | WACC.Lexer.T_Tilde =>
                Node := new WACC.AST.Exp_Node'(Typ => WACC.AST.N_Unary, others => <>);
@@ -68,7 +79,7 @@ package body WACC.Parser is
       end Parse_Exp;
 
       procedure Parse_Statement
-         (Node : in out WACC.AST.Any_Statement_Node)
+         (Node : out WACC.AST.Any_Statement_Node)
       is
       begin
          Expect (WACC.Lexer.T_return);

@@ -64,10 +64,17 @@ package body WACC.AST is
                Log (This.Int'Image);
             when N_Unary =>
                Print (This.Unary_Operator.all);
+               Print (This.Exp.all);
             when N_Binary =>
-               Print (This.Left.all);
                Print (This.Binary_Operator.all);
+               Log ("Left");
+               Indent;
+               Print (This.Left.all);
+               Dedent;
+               Log ("Right");
+               Indent;
                Print (This.Right.all);
+               Dedent;
          end case;
          Dedent;
       end Print;

@@ -17,13 +17,15 @@ is
        T_Open_Brace,
        T_Close_Brace,
        T_Semicolon,
-       T_Dash,
        T_Dash_Dash,
        T_Tilde,
+       T_Dash,
        T_Plus,
        T_Asterisk,
        T_Slash,
        T_Percent);
+
+   subtype Binary_Operator_Token_Type is Token_Type range T_Dash .. T_Percent;
 
    type Token is record
       Typ : Token_Type;

@@ -37,6 +37,25 @@ package body WACC.TACKY is
          end case;
       end Convert_Unop;
 
+      function Convert_Binop
+         (Binop : WACC.AST.Binary_Operator_Node)
+         return WACC.TACKY.Any_Binary_Operator_Node
+      is
+      begin
+         case Binop.Typ is
+            when WACC.AST.N_Add =>
+               return new WACC.TACKY.Binary_Operator_Node'(Typ => TA_Add);
+            when WACC.AST.N_Subtract =>
+               return new WACC.TACKY.Binary_Operator_Node'(Typ => TA_Subtract);
+            when WACC.AST.N_Multiply =>
+               return new WACC.TACKY.Binary_Operator_Node'(Typ => TA_Multiply);
+            when WACC.AST.N_Divide =>
+               return new WACC.TACKY.Binary_Operator_Node'(Typ => TA_Divide);
+            when WACC.AST.N_Remainder =>
+               return new WACC.TACKY.Binary_Operator_Node'(Typ => TA_Remainder);
+         end case;
+      end Convert_Binop;
+
       function Generate
          (Tree : WACC.AST.Exp_Node;
           Node : in out WACC.TACKY.Instruction_Node_Vectors.Vector)
@@ -53,18 +72,29 @@ package body WACC.TACKY is
                declare
                   Insn : constant WACC.TACKY.Any_Instruction_Node := new WACC.TACKY.Instruction_Node'
                      (Typ => WACC.TACKY.TA_Unary,
-                      Dst => new Val_Node'
+                      Unop_Dst => new Val_Node'
                         (Typ  => TA_Var,
                          Name => Make_Temporary),
-                      Src => Generate (Tree.Exp.all, Node),
+                      Unop_Src => Generate (Tree.Exp.all, Node),
                       Unary_Operator => Convert_Unop (Tree.Unary_Operator.all));
                begin
                   Append (Node, Insn);
-                  return Insn.Dst;
+                  return Insn.Unop_Dst;
                end;
             when WACC.AST.N_Binary =>
-               --  TODO
-               raise Program_Error with "Unimplemented.";
+               declare
+                  Insn : constant WACC.TACKY.Any_Instruction_Node := new WACC.TACKY.Instruction_Node'
+                     (Typ => WACC.TACKY.TA_Binary,
+                      Binop_Dst => new Val_Node'
+                        (Typ  => TA_Var,
+                         Name => Make_Temporary),
+                      Binop_Src1 => Generate (Tree.Left.all, Node),
+                      Binop_Src2 => Generate (Tree.Right.all, Node),
+                      Binary_Operator => Convert_Binop (Tree.Binary_Operator.all));
+               begin
+                  Append (Node, Insn);
+                  return Insn.Binop_Dst;
+               end;
          end case;
       end Generate;
 
@@ -121,6 +151,16 @@ package body WACC.TACKY is
       end Dedent;
 
       procedure Print
+         (Node : WACC.TACKY.Binary_Operator_Node)
+      is
+      begin
+         Write ("Binary_Operator");
+         Indent;
+         Write (Node.Typ'Image);
+         Dedent;
+      end Print;
+
+      procedure Print
          (Node : WACC.TACKY.Unary_Operator_Node)
       is
       begin
@@ -160,9 +200,18 @@ package body WACC.TACKY is
                Write ("Unary_Operator =");
                Print (Node.Unary_Operator.all);
                Write ("Dst = ");
-               Print (Node.Dst.all);
+               Print (Node.Unop_Dst.all);
                Write ("Src = ");
-               Print (Node.Src.all);
+               Print (Node.Unop_Src.all);
+            when TA_Binary =>
+               Write ("Binary_Operator =");
+               Print (Node.Binary_Operator.all);
+               Write ("Dst = ");
+               Print (Node.Binop_Dst.all);
+               Write ("Src1 = ");
+               Print (Node.Binop_Src1.all);
+               Write ("Src2 = ");
+               Print (Node.Binop_Src1.all);
          end case;
          Dedent;
       end Print;

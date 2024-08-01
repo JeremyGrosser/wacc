@@ -60,17 +60,19 @@ package body WACC.Assembly is
                   (Typ => WACC.Assembly.A_Ret));
             when WACC.TACKY.TA_Unary =>
                declare
-                  Dst : constant Any_Operand_Node := Convert_Operand (Tree.Dst.all);
+                  Dst : constant Any_Operand_Node := Convert_Operand (Tree.Unop_Dst.all);
                begin
                   Append (Node, new WACC.Assembly.Instruction_Node'
                      (Typ => WACC.Assembly.A_Mov,
-                      Src => Convert_Operand (Tree.Src.all),
+                      Src => Convert_Operand (Tree.Unop_Src.all),
                       Dst => Dst));
                   Append (Node, new WACC.Assembly.Instruction_Node'
                      (Typ => WACC.Assembly.A_Unary,
                       Unary_Operator => Convert_Unary_Operator (Tree.Unary_Operator.all),
                       Operand => Dst));
                end;
+            when WACC.TACKY.TA_Binary =>
+               null; --  TODO
          end case;
       end Generate;
 

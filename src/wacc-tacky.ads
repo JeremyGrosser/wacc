@@ -6,11 +6,25 @@ package WACC.TACKY is
 
    --  program = Program(function_definition)
    --  function_definition = Function(identifier, 1 instruction* body)
-   --  instruction = Return(val) | Unary(unary_operator, val src, val dst)
+   --  instruction = Return(val)
+   --              | Unary(unary_operator, val src, val dst)
+   --              | Binary(binary_operator, val src1, val src2, val dst)
    --  val = Constant(int) | Var(identifier)
    --  unary_operator = Complement | Negate
+   --  binary_operator = Add | Subtract | Multiply | Divide | Remainder
 
    subtype Identifier is Unbounded_String;
+
+   type Binary_Operator_Type is
+      (TA_Add,
+       TA_Subtract,
+       TA_Multiply,
+       TA_Divide,
+       TA_Remainder);
+   type Binary_Operator_Node
+      (Typ : Binary_Operator_Type)
+   is null record;
+   type Any_Binary_Operator_Node is access Binary_Operator_Node;
 
    type Unary_Operator_Type is
       (TA_Complement,
@@ -37,7 +51,8 @@ package WACC.TACKY is
 
    type Instruction_Node_Type is
       (TA_Return,
-       TA_Unary);
+       TA_Unary,
+       TA_Binary);
    type Instruction_Node
       (Typ : Instruction_Node_Type)
    is record
@@ -46,7 +61,10 @@ package WACC.TACKY is
             Val : Any_Val_Node;
          when TA_Unary =>
             Unary_Operator : Any_Unary_Operator_Node;
-            Src, Dst : Any_Val_Node;
+            Unop_Src, Unop_Dst : Any_Val_Node;
+         when TA_Binary =>
+            Binary_Operator : Any_Binary_Operator_Node;
+            Binop_Src1, Binop_Src2, Binop_Dst : Any_Val_Node;
       end case;
    end record;
    type Any_Instruction_Node is access Instruction_Node;

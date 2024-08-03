@@ -528,7 +528,7 @@ package body WACC.Assembly is
                Write ("%");
                Print (Node.Reg.all);
             when A_Stack =>
-               Write (Long_Integer (-Node.Stack_Int));
+               Write (Long_Integer (Node.Stack_Int));
                Write ("(%rbp)");
             when A_Pseudo =>
                raise Assembly_Error with "Cannot emit pseudo instruction to file";

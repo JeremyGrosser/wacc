@@ -129,7 +129,7 @@ Division is a little more complicated because one of the operands needs sign
 extension. I was extra confused when the `cdq` instruction disassembled as
 `cltd`. It's the same thing, but AT&T and Intel assembly syntax disagree on
 what this instruction is called. Confusing! Apparently there's a small list of
-register aliases like this.
+instruction aliases like this.
 
 Rather than modifying the instruction vector in place like I did in the last
 code emission pass, I built a new copy of the vector while reading the old one.

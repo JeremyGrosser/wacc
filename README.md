@@ -111,3 +111,32 @@ feel that deallocation is unnecessary in the context of a short lived compiler
 process. Perhaps I'd feel differently if this code was getting embedded into a
 language server. If I do want to do deallocation later, I wonder if there's
 something clever I can do with storage pools to free an entire tree.
+
+## Chapter 3: Binary Operators
+The big topic in this chapter was operator precedence. The "Precedence
+Climbing" approach makes more sense to me than the Pratt parsers I've worked
+with in the past. The discussion in this chapter was quite detailed and I
+appreciated the comparison to recursive descent. It's nice to know the "why" in
+addition to the "how". The actual implementation ended up being quite a bit
+simpler than I expected based on the reading, which was nice.
+
+The add, subtract, and multiply operators are fairly straightforward, except
+that they sometimes need an operand pushed to a temporary register, which is
+done in a later compilation pass. I really like how adding a new "micropass"
+simplifies the codegen.
+
+Division is a little more complicated because one of the operands needs sign
+extension. I was extra confused when the `cdq` instruction disassembled as
+`cltd`. It's the same thing, but AT&T and Intel assembly syntax disagree on
+what this instruction is called. Confusing! Apparently there's a small list of
+register aliases like this.
+
+Rather than modifying the instruction vector in place like I did in the last
+code emission pass, I built a new copy of the vector while reading the old one.
+This was much more straightforward than the edit list approach, at the cost of
+additional memory utilization. Seems like a worthwhile tradeoff to me.
+
+I got a bit confused with the signedness of stack offsets in my assembly AST
+and ended up smashing the stack a few times. I added a
+`subtype Stack_Offset range Integer'First .. -4` to make it impossible to
+generate code like that again.

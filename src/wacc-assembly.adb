@@ -41,6 +41,79 @@ package body WACC.Assembly is
          end case;
       end Convert_Unary_Operator;
 
+      procedure Generate_Binary_Operation
+         (Tree : WACC.TACKY.Instruction_Node;
+          Node : in out WACC.Assembly.Instruction_Node_Vectors.Vector)
+      is
+         use WACC.Assembly.Instruction_Node_Vectors;
+         Dst : Any_Operand_Node;
+      begin
+         case Tree.Binary_Operator.Typ is
+            when WACC.TACKY.TA_Add =>
+               Dst := Convert_Operand (Tree.Binop_Dst.all);
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Mov,
+                   Src => Convert_Operand (Tree.Binop_Src1.all),
+                   Dst => Dst));
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Binary,
+                   Binary_Operator => new Binary_Operator_Node'(Typ => A_Add),
+                   Binary_Src => Convert_Operand (Tree.Binop_Src2.all),
+                   Binary_Dst => Dst));
+            when WACC.TACKY.TA_Subtract =>
+               Dst := Convert_Operand (Tree.Binop_Dst.all);
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Mov,
+                   Src => Convert_Operand (Tree.Binop_Src1.all),
+                   Dst => Dst));
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Binary,
+                   Binary_Operator => new Binary_Operator_Node'(Typ => A_Sub),
+                   Binary_Src => Convert_Operand (Tree.Binop_Src2.all),
+                   Binary_Dst => Dst));
+            when WACC.TACKY.TA_Multiply =>
+               Dst := Convert_Operand (Tree.Binop_Dst.all);
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Mov,
+                   Src => Convert_Operand (Tree.Binop_Src1.all),
+                   Dst => Dst));
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Binary,
+                   Binary_Operator => new Binary_Operator_Node'(Typ => A_Mult),
+                   Binary_Src => Convert_Operand (Tree.Binop_Src2.all),
+                   Binary_Dst => Dst));
+            when WACC.TACKY.TA_Divide =>
+               Dst := new Operand_Node'
+                  (Typ => A_Reg,
+                   Reg => new Reg_Node'(Typ => A_AX));
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Mov,
+                   Src => Convert_Operand (Tree.Binop_Src1.all),
+                   Dst => Dst));
+               Append (Node, new Instruction_Node'(Typ => A_Cdq));
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Idiv,
+                   Idiv_Src => Convert_Operand (Tree.Binop_Src2.all)));
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Mov,
+                   Src => Dst,
+                   Dst => Convert_Operand (Tree.Binop_Dst.all)));
+            when WACC.TACKY.TA_Remainder =>
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Mov,
+                   Src => Convert_Operand (Tree.Binop_Src1.all),
+                   Dst => new Operand_Node'(Typ => A_Reg, Reg => new Reg_Node'(Typ => A_AX))));
+               Append (Node, new Instruction_Node'(Typ => A_Cdq));
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Idiv,
+                   Idiv_Src => Convert_Operand (Tree.Binop_Src2.all)));
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Mov,
+                   Src => new Operand_Node'(Typ => A_Reg, Reg => new Reg_Node'(Typ => A_DX)),
+                   Dst => Convert_Operand (Tree.Binop_Dst.all)));
+         end case;
+      end Generate_Binary_Operation;
+
       procedure Generate
          (Tree : WACC.TACKY.Instruction_Node;
           Node : in out WACC.Assembly.Instruction_Node_Vectors.Vector)
@@ -69,10 +142,10 @@ package body WACC.Assembly is
                   Append (Node, new WACC.Assembly.Instruction_Node'
                      (Typ => WACC.Assembly.A_Unary,
                       Unary_Operator => Convert_Unary_Operator (Tree.Unary_Operator.all),
-                      Operand => Dst));
+                      Unary_Operand => Dst));
                end;
             when WACC.TACKY.TA_Binary =>
-               null; --  TODO
+               Generate_Binary_Operation (Tree, Node);
          end case;
       end Generate;
 
@@ -122,8 +195,13 @@ package body WACC.Assembly is
                Replace_Pseudo (Node.Src);
                Replace_Pseudo (Node.Dst);
             when A_Unary =>
-               Replace_Pseudo (Node.Operand);
-            when others =>
+               Replace_Pseudo (Node.Unary_Operand);
+            when A_Binary =>
+               Replace_Pseudo (Node.Binary_Src);
+               Replace_Pseudo (Node.Binary_Dst);
+            when A_Idiv =>
+               Replace_Pseudo (Node.Idiv_Src);
+            when A_Cdq | A_Allocate_Stack | A_Ret =>
                null;
          end case;
       end Replace_Pseudo;
@@ -184,8 +262,58 @@ package body WACC.Assembly is
 
          Prepend (Node.Instructions, new Instruction_Node'
             (Typ => A_Allocate_Stack,
-             Int => abs Integer (Next_Stack_Offset) - 4));
+             Stack_Size => abs Integer (Next_Stack_Offset - 4)));
       end Stack_Fixup;
+
+      procedure Binop_Fixup
+         (Node : in out WACC.Assembly.Function_Definition_Node)
+      is
+         use Instruction_Node_Vectors;
+         Rewrite : Instruction_Node_Vectors.Vector := Instruction_Node_Vectors.Empty_Vector;
+         Tmp : Any_Operand_Node;
+      begin
+         for Insn of Node.Instructions loop
+            if Insn.Typ = A_Idiv and then
+               Insn.Idiv_Src.Typ = A_Imm
+            then
+               --  idiv does not take immediate operands, rewrite to use an intermediate register
+               Tmp := new Operand_Node'(Typ => A_Reg, Reg => new Reg_Node'(Typ => A_R10));
+               Append (Rewrite, new Instruction_Node'(Typ => A_Mov, Src => Insn.Idiv_Src, Dst => Tmp));
+               Append (Rewrite, new Instruction_Node'(Typ => A_Idiv, Idiv_Src => Tmp));
+            elsif Insn.Typ = A_Binary and then
+                  Insn.Binary_Operator.Typ in A_Add .. A_Sub and then
+                  Insn.Binary_Src.Typ = A_Stack and then
+                  Insn.Binary_Dst.Typ = A_Stack
+            then
+               --  add and sub cannot use memory for both operands, rewrite src to use an intermediate register
+               Tmp := new Operand_Node'(Typ => A_Reg, Reg => new Reg_Node'(Typ => A_R10));
+               Append (Rewrite, new Instruction_Node'(Typ => A_Mov, Src => Insn.Binary_Src, Dst => Tmp));
+               Append (Rewrite, new Instruction_Node'
+                  (Typ => A_Binary,
+                   Binary_Operator => Insn.Binary_Operator,
+                   Binary_Src => Tmp,
+                   Binary_Dst => Insn.Binary_Dst));
+            elsif Insn.Typ = A_Binary and then
+                  Insn.Binary_Operator.Typ = A_Mult and then
+                  Insn.Binary_Dst.Typ = A_Stack
+            then
+               --  imul cannot use a memory address as dst, rewrite it to use an intermediate register
+               Tmp := new Operand_Node'(Typ => A_Reg, Reg => new Reg_Node'(Typ => A_R11));
+               Append (Rewrite, new Instruction_Node'(Typ => A_Mov, Src => Insn.Binary_Dst, Dst => Tmp));
+               Append (Rewrite, new Instruction_Node'
+                  (Typ => A_Binary,
+                   Binary_Operator => Insn.Binary_Operator,
+                   Binary_Src => Insn.Binary_Src,
+                   Binary_Dst => Tmp));
+               Append (Rewrite, new Instruction_Node'(Typ => A_Mov, Src => Tmp, Dst => Insn.Binary_Dst));
+            else
+               Append (Rewrite, Insn);
+            end if;
+         end loop;
+
+         --  Finally replace Node.Instructions with Rewrite
+         Move (Target => Node.Instructions, Source => Rewrite);
+      end Binop_Fixup;
    begin
       --  Pass 1: TACKY to Assembly
       Generate (Tree.Function_Definition, Asm.Function_Definition);
@@ -195,6 +323,9 @@ package body WACC.Assembly is
 
       --  Pass 3: Stack Fixup
       Stack_Fixup (Asm.Function_Definition);
+
+      --  Pass 4: Binary operation register fixup
+      Binop_Fixup (Asm.Function_Definition);
    end Generate;
 
    procedure Print
@@ -268,6 +399,16 @@ package body WACC.Assembly is
       end Print;
 
       procedure Print
+         (Node : WACC.Assembly.Binary_Operator_Node)
+      is
+      begin
+         Write ("Binary_Operator");
+         Indent;
+         Write (Node.Typ'Image);
+         Dedent;
+      end Print;
+
+      procedure Print
          (Node : WACC.Assembly.Instruction_Node)
       is
       begin
@@ -284,10 +425,22 @@ package body WACC.Assembly is
                Write ("Unary_Operator = ");
                Print (Node.Unary_Operator.all);
                Write ("Operand = ");
-               Print (Node.Operand.all);
+               Print (Node.Unary_Operand.all);
+            when A_Binary =>
+               Write ("Binary_Operator = ");
+               Print (Node.Binary_Operator.all);
+               Write ("Src = ");
+               Print (Node.Binary_Src.all);
+               Write ("Dst = ");
+               Print (Node.Binary_Dst.all);
+            when A_Idiv =>
+               Write ("Src = ");
+               Print (Node.Idiv_Src.all);
+            when A_Cdq =>
+               null;
             when A_Allocate_Stack =>
-               Write ("Int = ");
-               Write (Node.Int'Image);
+               Write ("Size = ");
+               Write (Node.Stack_Size'Image);
             when A_Ret =>
                null;
          end case;
@@ -354,8 +507,12 @@ package body WACC.Assembly is
          case Node.Typ is
             when A_AX =>
                Write ("eax");
+            when A_DX =>
+               Write ("edx");
             when A_R10 =>
                Write ("r10d");
+            when A_R11 =>
+               Write ("r11d");
          end case;
       end Print;
 
@@ -391,6 +548,20 @@ package body WACC.Assembly is
       end Print;
 
       procedure Print
+         (Node : WACC.Assembly.Binary_Operator_Node)
+      is
+      begin
+         case Node.Typ is
+            when A_Add =>
+               Write ("addl");
+            when A_Sub =>
+               Write ("subl");
+            when A_Mult =>
+               Write ("imull");
+         end case;
+      end Print;
+
+      procedure Print
          (Node : WACC.Assembly.Instruction_Node)
       is
       begin
@@ -404,10 +575,21 @@ package body WACC.Assembly is
             when A_Unary =>
                Print (Node.Unary_Operator.all);
                Write (" ");
-               Print (Node.Operand.all);
+               Print (Node.Unary_Operand.all);
+            when A_Binary =>
+               Print (Node.Binary_Operator.all);
+               Write (" ");
+               Print (Node.Binary_Src.all);
+               Write (", ");
+               Print (Node.Binary_Dst.all);
+            when A_Cdq =>
+               Write ("cdq");
+            when A_Idiv =>
+               Write ("idivl ");
+               Print (Node.Idiv_Src.all);
             when A_Allocate_Stack =>
                Write ("subq $");
-               Write (Long_Integer (abs Node.Int));
+               Write (Long_Integer (Node.Stack_Size));
                Write (", %rsp");
             when A_Ret =>
                Write ("movq %rbp, %rsp");

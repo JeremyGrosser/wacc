@@ -9,16 +9,20 @@ package WACC.Assembly is
    --  function_definition = Function(identifier name, instruction* instructions)
    --  instruction = Mov(operand src, operand dst)
    --              | Unary(unary_operator, operand)
+   --              | Binary(binary_operator, operand, operand)
+   --              | Idiv(operand)
+   --              | Cdq
    --              | AllocateStack(int)
    --              | Ret
    --  unary_operator = Neg | Not
+   --  binary_operator = Add | Sub | Mult
    --  operand = Imm(int) | Reg(reg) | Pseudo(identifier) | Stack(int)
-   --  reg = AX | R10
+   --  reg = AX | DX | R10 | R11
 
    subtype Identifier is Unbounded_String;
    subtype Stack_Offset is Integer range Integer'First .. 4;
 
-   type Reg_Node_Type is (A_AX, A_R10);
+   type Reg_Node_Type is (A_AX, A_DX, A_R10, A_R11);
    type Reg_Node
       (Typ : Reg_Node_Type)
    is null record;
@@ -36,10 +40,16 @@ package WACC.Assembly is
          when A_Pseudo =>
             Name : Identifier;
          when A_Stack =>
-            Stack_Int : Natural;
+            Stack_Int : Stack_Offset;
       end case;
    end record;
    type Any_Operand_Node is access Operand_Node;
+
+   type Binary_Operator_Type is (A_Add, A_Sub, A_Mult);
+   type Binary_Operator_Node
+      (Typ : Binary_Operator_Type)
+   is null record;
+   type Any_Binary_Operator_Node is access Binary_Operator_Node;
 
    type Unary_Operator_Type is (A_Neg, A_Not);
    type Unary_Operator_Node
@@ -47,7 +57,7 @@ package WACC.Assembly is
    is null record;
    type Any_Unary_Operator_Node is access Unary_Operator_Node;
 
-   type Instruction_Type is (A_Mov, A_Unary, A_Allocate_Stack, A_Ret);
+   type Instruction_Type is (A_Mov, A_Unary, A_Binary, A_Idiv, A_Cdq, A_Allocate_Stack, A_Ret);
    type Instruction_Node
       (Typ : Instruction_Type)
    is record
@@ -56,9 +66,16 @@ package WACC.Assembly is
             Src, Dst : Any_Operand_Node;
          when A_Unary =>
             Unary_Operator : Any_Unary_Operator_Node;
-            Operand : Any_Operand_Node;
+            Unary_Operand : Any_Operand_Node;
+         when A_Binary =>
+            Binary_Operator : Any_Binary_Operator_Node;
+            Binary_Src, Binary_Dst : Any_Operand_Node;
+         when A_Idiv =>
+            Idiv_Src : Any_Operand_Node;
+         when A_Cdq =>
+            null;
          when A_Allocate_Stack =>
-            Int : Stack_Offset;
+            Stack_Size : Natural;
          when A_Ret =>
             null;
       end case;

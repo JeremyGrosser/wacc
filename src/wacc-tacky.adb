@@ -53,6 +53,16 @@ package body WACC.TACKY is
                return new WACC.TACKY.Binary_Operator_Node'(Typ => TA_Divide);
             when WACC.AST.N_Remainder =>
                return new WACC.TACKY.Binary_Operator_Node'(Typ => TA_Remainder);
+            when WACC.AST.N_And =>
+               return new WACC.TACKY.Binary_Operator_Node'(Typ => TA_And);
+            when WACC.AST.N_Or =>
+               return new WACC.TACKY.Binary_Operator_Node'(Typ => TA_Or);
+            when WACC.AST.N_Xor =>
+               return new WACC.TACKY.Binary_Operator_Node'(Typ => TA_Xor);
+            when WACC.AST.N_Left_Shift =>
+               return new WACC.TACKY.Binary_Operator_Node'(Typ => TA_Left_Shift);
+            when WACC.AST.N_Right_Shift =>
+               return new WACC.TACKY.Binary_Operator_Node'(Typ => TA_Right_Shift);
          end case;
       end Convert_Binop;
 

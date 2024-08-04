@@ -1,3 +1,4 @@
+pragma Style_Checks ("M120");
 with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 with Ada.Containers.Vectors;
 with WACC.AST;
@@ -11,7 +12,7 @@ package WACC.TACKY is
    --              | Binary(binary_operator, val src1, val src2, val dst)
    --  val = Constant(int) | Var(identifier)
    --  unary_operator = Complement | Negate
-   --  binary_operator = Add | Subtract | Multiply | Divide | Remainder
+   --  binary_operator = Add | Subtract | Multiply | Divide | Remainder | And | Or | Xor | Left_Shift | Right_Shift
 
    subtype Identifier is Unbounded_String;
 
@@ -20,7 +21,12 @@ package WACC.TACKY is
        TA_Subtract,
        TA_Multiply,
        TA_Divide,
-       TA_Remainder);
+       TA_Remainder,
+       TA_And,
+       TA_Or,
+       TA_Xor,
+       TA_Left_Shift,
+       TA_Right_Shift);
    type Binary_Operator_Node
       (Typ : Binary_Operator_Type)
    is null record;

@@ -11,7 +11,7 @@ is
    --      | Unary(unary_operator, exp)
    --      | Binary(binary_operator, exp, exp)
    --  unary_operator = Complement | Negate
-   --  binary_operator = Add | Subtract | Multiply | Divide | Remainder
+   --  binary_operator = Add | Subtract | Multiply | Divide | Remainder | And | Or | Xor | Left_Shift | Right_Shift
 
    subtype Identifier is Unbounded_String;
 
@@ -20,7 +20,12 @@ is
        N_Subtract,
        N_Multiply,
        N_Divide,
-       N_Remainder);
+       N_Remainder,
+       N_And,
+       N_Or,
+       N_Xor,
+       N_Left_Shift,
+       N_Right_Shift);
    type Binary_Operator_Node
       (Typ : Binary_Operator_Type)
    is null record;

@@ -61,7 +61,7 @@ procedure Main is
                WACC.Lexer.Lex (Preprocessed_File, Tokens);
             when Parse =>
                WACC.Parser.Parse_Program (Tokens, Tree);
-               --  WACC.AST.Print (Tree);
+               WACC.AST.Print (Tree);
             when Tacky =>
                WACC.TACKY.Generate (Tree, TAC);
                --  WACC.TACKY.Print (TAC);

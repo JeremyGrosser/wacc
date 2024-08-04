@@ -91,6 +91,10 @@ package body WACC.Lexer is
             Lex_Identifier;
          elsif Match ("--") then
             Token_Vectors.Append (Tokens, (Typ => T_Dash_Dash, others => <>));
+         elsif Match ("<<") then
+            Token_Vectors.Append (Tokens, (Typ => T_Double_Less_Than, others => <>));
+         elsif Match (">>") then
+            Token_Vectors.Append (Tokens, (Typ => T_Double_Greater_Than, others => <>));
          elsif Ch = '-' then
             Add_Single (T_Dash);
          elsif Ch = '+' then
@@ -103,6 +107,12 @@ package body WACC.Lexer is
             Add_Single (T_Percent);
          elsif Ch = '~' then
             Add_Single (T_Tilde);
+         elsif Ch = '&' then
+            Add_Single (T_Ampersand);
+         elsif Ch = '^' then
+            Add_Single (T_Caret);
+         elsif Ch = '|' then
+            Add_Single (T_Pipe);
          elsif Ch = '(' then
             Add_Single (T_Open_Paren);
          elsif Ch = ')' then

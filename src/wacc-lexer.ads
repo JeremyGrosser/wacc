@@ -23,9 +23,14 @@ is
        T_Plus,
        T_Asterisk,
        T_Slash,
-       T_Percent);
+       T_Percent,
+       T_Double_Less_Than,
+       T_Double_Greater_Than,
+       T_Ampersand,
+       T_Caret,
+       T_Pipe);
 
-   subtype Binary_Operator_Token_Type is Token_Type range T_Dash .. T_Percent;
+   subtype Binary_Operator_Token_Type is Token_Type range T_Dash .. T_Pipe;
 
    type Token is record
       Typ : Token_Type;

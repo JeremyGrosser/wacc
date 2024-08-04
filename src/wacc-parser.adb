@@ -72,6 +72,16 @@ package body WACC.Parser is
                Node := new WACC.AST.Binary_Operator_Node'(Typ => WACC.AST.N_Divide);
             when WACC.Lexer.T_Percent =>
                Node := new WACC.AST.Binary_Operator_Node'(Typ => WACC.AST.N_Remainder);
+            when WACC.Lexer.T_Ampersand =>
+               Node := new WACC.AST.Binary_Operator_Node'(Typ => WACC.AST.N_And);
+            when WACC.Lexer.T_Pipe =>
+               Node := new WACC.AST.Binary_Operator_Node'(Typ => WACC.AST.N_Or);
+            when WACC.Lexer.T_Caret =>
+               Node := new WACC.AST.Binary_Operator_Node'(Typ => WACC.AST.N_Xor);
+            when WACC.Lexer.T_Double_Less_Than =>
+               Node := new WACC.AST.Binary_Operator_Node'(Typ => WACC.AST.N_Left_Shift);
+            when WACC.Lexer.T_Double_Greater_Than =>
+               Node := new WACC.AST.Binary_Operator_Node'(Typ => WACC.AST.N_Right_Shift);
             when others =>
                raise Parse_Error with "Unexpected token in binop: " & Next_Token.Typ'Image;
          end case;
@@ -81,7 +91,7 @@ package body WACC.Parser is
       procedure Parse_Factor
          (Node : out WACC.AST.Any_Exp_Node);
 
-      type Operator_Precedence is range 0 .. 2;
+      type Operator_Precedence is range 0 .. 6;
 
       function Precedence
          (Typ : WACC.Lexer.Binary_Operator_Token_Type)
@@ -94,6 +104,14 @@ package body WACC.Parser is
                return 0;
             when T_Percent | T_Slash | T_Asterisk =>
                return 1;
+            when T_Double_Less_Than | T_Double_Greater_Than =>
+               return 2;
+            when T_Ampersand =>
+               return 3;
+            when T_Caret =>
+               return 4;
+            when T_Pipe =>
+               return 5;
          end case;
       end Precedence;
 

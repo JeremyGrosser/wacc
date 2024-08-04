@@ -111,6 +111,61 @@ package body WACC.Assembly is
                   (Typ => A_Mov,
                    Src => new Operand_Node'(Typ => A_Reg, Reg => new Reg_Node'(Typ => A_DX)),
                    Dst => Convert_Operand (Tree.Binop_Dst.all)));
+            when WACC.TACKY.TA_And =>
+               Dst := Convert_Operand (Tree.Binop_Dst.all);
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Mov,
+                   Src => Convert_Operand (Tree.Binop_Src1.all),
+                   Dst => Dst));
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Binary,
+                   Binary_Operator => new Binary_Operator_Node'(Typ => A_And),
+                   Binary_Src => Convert_Operand (Tree.Binop_Src2.all),
+                   Binary_Dst => Dst));
+            when WACC.TACKY.TA_Or =>
+               Dst := Convert_Operand (Tree.Binop_Dst.all);
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Mov,
+                   Src => Convert_Operand (Tree.Binop_Src1.all),
+                   Dst => Dst));
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Binary,
+                   Binary_Operator => new Binary_Operator_Node'(Typ => A_Or),
+                   Binary_Src => Convert_Operand (Tree.Binop_Src2.all),
+                   Binary_Dst => Dst));
+            when WACC.TACKY.TA_Xor =>
+               Dst := Convert_Operand (Tree.Binop_Dst.all);
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Mov,
+                   Src => Convert_Operand (Tree.Binop_Src1.all),
+                   Dst => Dst));
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Binary,
+                   Binary_Operator => new Binary_Operator_Node'(Typ => A_Xor),
+                   Binary_Src => Convert_Operand (Tree.Binop_Src2.all),
+                   Binary_Dst => Dst));
+            when WACC.TACKY.TA_Left_Shift =>
+               Dst := Convert_Operand (Tree.Binop_Dst.all);
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Mov,
+                   Src => Convert_Operand (Tree.Binop_Src1.all),
+                   Dst => Dst));
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Binary,
+                   Binary_Operator => new Binary_Operator_Node'(Typ => A_Sal),
+                   Binary_Src => Convert_Operand (Tree.Binop_Src2.all),
+                   Binary_Dst => Dst));
+            when WACC.TACKY.TA_Right_Shift =>
+               Dst := Convert_Operand (Tree.Binop_Dst.all);
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Mov,
+                   Src => Convert_Operand (Tree.Binop_Src1.all),
+                   Dst => Dst));
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Binary,
+                   Binary_Operator => new Binary_Operator_Node'(Typ => A_Sar),
+                   Binary_Src => Convert_Operand (Tree.Binop_Src2.all),
+                   Binary_Dst => Dst));
          end case;
       end Generate_Binary_Operation;
 
@@ -306,6 +361,18 @@ package body WACC.Assembly is
                    Binary_Src => Insn.Binary_Src,
                    Binary_Dst => Tmp));
                Append (Rewrite, new Instruction_Node'(Typ => A_Mov, Src => Tmp, Dst => Insn.Binary_Dst));
+            elsif Insn.Typ = A_Binary and then
+                  Insn.Binary_Operator.Typ in A_Sal .. A_Sar and then
+                  Insn.Binary_Src.Typ /= A_Imm
+            then
+               --  sal/sar cannot use a memory address as the shift count, it must be in %ecx
+               Tmp := new Operand_Node'(Typ => A_Reg, Reg => new Reg_Node'(Typ => A_CX));
+               Append (Rewrite, new Instruction_Node'(Typ => A_Mov, Src => Insn.Binary_Src, Dst => Tmp));
+               Append (Rewrite, new Instruction_Node'
+                  (Typ => A_Binary,
+                   Binary_Operator => Insn.Binary_Operator,
+                   Binary_Src => Tmp,
+                   Binary_Dst => Insn.Binary_Dst));
             else
                Append (Rewrite, Insn);
             end if;
@@ -507,6 +574,8 @@ package body WACC.Assembly is
          case Node.Typ is
             when A_AX =>
                Write ("eax");
+            when A_CX =>
+               Write ("ecx");
             when A_DX =>
                Write ("edx");
             when A_R10 =>
@@ -558,6 +627,16 @@ package body WACC.Assembly is
                Write ("subl");
             when A_Mult =>
                Write ("imull");
+            when A_And =>
+               Write ("andl");
+            when A_Or =>
+               Write ("orl");
+            when A_Xor =>
+               Write ("xorl");
+            when A_Sal =>
+               Write ("sall");
+            when A_Sar =>
+               Write ("sarl");
          end case;
       end Print;
 

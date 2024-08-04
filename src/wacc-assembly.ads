@@ -15,14 +15,14 @@ package WACC.Assembly is
    --              | AllocateStack(int)
    --              | Ret
    --  unary_operator = Neg | Not
-   --  binary_operator = Add | Sub | Mult
+   --  binary_operator = Add | Sub | Mult | And | Or | Xor | Sal | Sar
    --  operand = Imm(int) | Reg(reg) | Pseudo(identifier) | Stack(int)
-   --  reg = AX | DX | R10 | R11
+   --  reg = AX | CX | DX | R10 | R11
 
    subtype Identifier is Unbounded_String;
    subtype Stack_Offset is Integer range Integer'First .. -4;
 
-   type Reg_Node_Type is (A_AX, A_DX, A_R10, A_R11);
+   type Reg_Node_Type is (A_AX, A_CX, A_DX, A_R10, A_R11);
    type Reg_Node
       (Typ : Reg_Node_Type)
    is null record;
@@ -45,7 +45,7 @@ package WACC.Assembly is
    end record;
    type Any_Operand_Node is access Operand_Node;
 
-   type Binary_Operator_Type is (A_Add, A_Sub, A_Mult);
+   type Binary_Operator_Type is (A_Add, A_Sub, A_Mult, A_And, A_Or, A_Xor, A_Sal, A_Sar);
    type Binary_Operator_Node
       (Typ : Binary_Operator_Type)
    is null record;

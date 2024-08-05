@@ -140,3 +140,11 @@ I got a bit confused with the signedness of stack offsets in my assembly AST
 and ended up smashing the stack a few times. I added a
 `subtype Stack_Offset range Integer'First .. -4` to make it impossible to
 generate code like that again.
+
+The "extra credit" section adds bitwise (AND, OR, XOR, SHL, SHR) operators. I
+implemented it, but the tests don't pass and I'm not entirely sure why. I don't
+want to waste too much time debugging this right now, so I've committed it to a
+branch and will come back to it later.
+
+## Chapter 4: Logical and Relational Operators
+

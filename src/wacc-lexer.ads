@@ -23,7 +23,16 @@ is
        T_Plus,
        T_Asterisk,
        T_Slash,
-       T_Percent);
+       T_Percent,
+       T_Bang,
+       T_And_And,
+       T_Pipe_Pipe,
+       T_Equal_Equal,
+       T_Bang_Equal,
+       T_Less_Than,
+       T_Greater_Than,
+       T_Less_Equal,
+       T_Greater_Equal);
 
    subtype Binary_Operator_Token_Type is Token_Type range T_Dash .. T_Percent;
 

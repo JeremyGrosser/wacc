@@ -147,4 +147,14 @@ want to waste too much time debugging this right now, so I've committed it to a
 branch and will come back to it later.
 
 ## Chapter 4: Logical and Relational Operators
+Conditional expressions! There are a lot of new symbols to add to the ASDL
+structures, I wish I'd added these incrementally rather than trying to do all
+of them at once. The compiler complains about every case statement with missing
+types so I had to implement all of them before I could get any useful feedback.
 
+My TACKY generation code had assumed that each binary operator would only
+produce a single instruction node. In hindsight, this is obviously wrong and
+I was forced to do a lot of refactoring in this stage. The short circuit
+evaluation of `&&` and `||` operators means that we have to be careful that the
+instructions to evaluate the left hand side are generated first so that we can
+add a comparison and jump afterward.

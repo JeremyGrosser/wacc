@@ -38,6 +38,9 @@ package body WACC.Assembly is
             when WACC.TACKY.TA_Negate =>
                return new WACC.Assembly.Unary_Operator_Node'
                   (Typ => WACC.Assembly.A_Neg);
+            when WACC.TACKY.TA_Not =>
+               --  TODO
+               raise Program_Error;
          end case;
       end Convert_Unary_Operator;
 
@@ -111,6 +114,9 @@ package body WACC.Assembly is
                   (Typ => A_Mov,
                    Src => new Operand_Node'(Typ => A_Reg, Reg => new Reg_Node'(Typ => A_DX)),
                    Dst => Convert_Operand (Tree.Binop_Dst.all)));
+            when WACC.TACKY.TA_Equal .. WACC.TACKY.TA_Greater_Or_Equal =>
+               --  TODO
+               raise Program_Error;
          end case;
       end Generate_Binary_Operation;
 
@@ -146,6 +152,16 @@ package body WACC.Assembly is
                end;
             when WACC.TACKY.TA_Binary =>
                Generate_Binary_Operation (Tree, Node);
+            when WACC.TACKY.TA_Copy =>
+               raise Program_Error;
+            when WACC.TACKY.TA_Jump =>
+               raise Program_Error;
+            when WACC.TACKY.TA_Jump_If_Zero =>
+               raise Program_Error;
+            when WACC.TACKY.TA_Jump_If_Not_Zero =>
+               raise Program_Error;
+            when WACC.TACKY.TA_Label =>
+               raise Program_Error;
          end case;
       end Generate;
 

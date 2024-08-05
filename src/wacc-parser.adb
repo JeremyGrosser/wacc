@@ -36,6 +36,8 @@ package body WACC.Parser is
                Node := new WACC.AST.Unary_Operator_Node'(Typ => WACC.AST.N_Negate);
             when WACC.Lexer.T_Tilde =>
                Node := new WACC.AST.Unary_Operator_Node'(Typ => WACC.AST.N_Complement);
+            when WACC.Lexer.T_Bang =>
+               Node := new WACC.AST.Unary_Operator_Node'(Typ => WACC.AST.N_Not);
             when others =>
                raise Parse_Error with "Expected Dash or Tilde token in unary operator, got " & Next_Token.Typ'Image;
          end case;
@@ -72,6 +74,22 @@ package body WACC.Parser is
                Node := new WACC.AST.Binary_Operator_Node'(Typ => WACC.AST.N_Divide);
             when WACC.Lexer.T_Percent =>
                Node := new WACC.AST.Binary_Operator_Node'(Typ => WACC.AST.N_Remainder);
+            when WACC.Lexer.T_And_And =>
+               Node := new WACC.AST.Binary_Operator_Node'(Typ => WACC.AST.N_And);
+            when WACC.Lexer.T_Pipe_Pipe =>
+               Node := new WACC.AST.Binary_Operator_Node'(Typ => WACC.AST.N_Or);
+            when WACC.Lexer.T_Equal_Equal =>
+               Node := new WACC.AST.Binary_Operator_Node'(Typ => WACC.AST.N_Equal);
+            when WACC.Lexer.T_Bang_Equal =>
+               Node := new WACC.AST.Binary_Operator_Node'(Typ => WACC.AST.N_Not_Equal);
+            when WACC.Lexer.T_Less_Than =>
+               Node := new WACC.AST.Binary_Operator_Node'(Typ => WACC.AST.N_Less_Than);
+            when WACC.Lexer.T_Less_Equal =>
+               Node := new WACC.AST.Binary_Operator_Node'(Typ => WACC.AST.N_Less_Or_Equal);
+            when WACC.Lexer.T_Greater_Than =>
+               Node := new WACC.AST.Binary_Operator_Node'(Typ => WACC.AST.N_Greater_Than);
+            when WACC.Lexer.T_Greater_Equal =>
+               Node := new WACC.AST.Binary_Operator_Node'(Typ => WACC.AST.N_Greater_Or_Equal);
             when others =>
                raise Parse_Error with "Unexpected token in binop: " & Next_Token.Typ'Image;
          end case;
@@ -81,7 +99,7 @@ package body WACC.Parser is
       procedure Parse_Factor
          (Node : out WACC.AST.Any_Exp_Node);
 
-      type Operator_Precedence is range 0 .. 2;
+      type Operator_Precedence is range 0 .. 51;
 
       function Precedence
          (Typ : WACC.Lexer.Binary_Operator_Token_Type)
@@ -90,10 +108,18 @@ package body WACC.Parser is
          use WACC.Lexer;
       begin
          case Typ is
-            when T_Dash | T_Plus =>
-               return 0;
             when T_Percent | T_Slash | T_Asterisk =>
-               return 1;
+               return 50;
+            when T_Dash | T_Plus =>
+               return 45;
+            when T_Less_Than | T_Less_Equal | T_Greater_Than | T_Greater_Equal =>
+               return 35;
+            when T_Equal_Equal | T_Bang_Equal =>
+               return 30;
+            when T_And_And =>
+               return 10;
+            when T_Pipe_Pipe =>
+               return 5;
          end case;
       end Precedence;
 
@@ -130,7 +156,7 @@ package body WACC.Parser is
                   (Typ => WACC.AST.N_Constant,
                    Int => Parse_Int (Ada.Strings.Unbounded.To_String (Next_Token.Literal)));
                Delete_First (Input);
-            when WACC.Lexer.T_Dash | WACC.Lexer.T_Tilde =>
+            when WACC.Lexer.T_Dash | WACC.Lexer.T_Tilde | WACC.Lexer.T_Bang =>
                Node := new WACC.AST.Exp_Node'(Typ => WACC.AST.N_Unary, others => <>);
                Parse_Unop (Node.Unary_Operator);
                Parse_Factor (Node.Exp);

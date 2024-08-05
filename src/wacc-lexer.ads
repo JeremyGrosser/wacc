@@ -19,12 +19,12 @@ is
        T_Semicolon,
        T_Dash_Dash,
        T_Tilde,
+       T_Bang,
        T_Dash,
        T_Plus,
        T_Asterisk,
        T_Slash,
        T_Percent,
-       T_Bang,
        T_And_And,
        T_Pipe_Pipe,
        T_Equal_Equal,
@@ -34,7 +34,7 @@ is
        T_Less_Equal,
        T_Greater_Equal);
 
-   subtype Binary_Operator_Token_Type is Token_Type range T_Dash .. T_Percent;
+   subtype Binary_Operator_Token_Type is Token_Type range T_Dash .. T_Greater_Equal;
 
    type Token is record
       Typ : Token_Type;

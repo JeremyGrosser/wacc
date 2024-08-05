@@ -10,8 +10,10 @@ is
    --  exp = Constant(int)
    --      | Unary(unary_operator, exp)
    --      | Binary(binary_operator, exp, exp)
-   --  unary_operator = Complement | Negate
-   --  binary_operator = Add | Subtract | Multiply | Divide | Remainder
+   --  unary_operator = Complement | Negate | Not
+   --  binary_operator = Add | Subtract | Multiply | Divide | Remainder | And
+   --                  | Or | Equal | NotEqual | LessThan | LessOrEqual
+   --                  | GreaterThan | GreaterOrEqual
 
    subtype Identifier is Unbounded_String;
 
@@ -20,7 +22,15 @@ is
        N_Subtract,
        N_Multiply,
        N_Divide,
-       N_Remainder);
+       N_Remainder,
+       N_And,
+       N_Or,
+       N_Equal,
+       N_Not_Equal,
+       N_Less_Than,
+       N_Less_Or_Equal,
+       N_Greater_Than,
+       N_Greater_Or_Equal);
    type Binary_Operator_Node
       (Typ : Binary_Operator_Type)
    is null record;
@@ -28,7 +38,8 @@ is
 
    type Unary_Operator_Type is
       (N_Complement,
-       N_Negate);
+       N_Negate,
+       N_Not);
    type Unary_Operator_Node
       (Typ : Unary_Operator_Type)
    is null record;

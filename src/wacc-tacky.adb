@@ -34,6 +34,9 @@ package body WACC.TACKY is
                return new WACC.TACKY.Unary_Operator_Node'(Typ => TA_Complement);
             when WACC.AST.N_Negate =>
                return new WACC.TACKY.Unary_Operator_Node'(Typ => TA_Negate);
+            when WACC.AST.N_Not =>
+               --  TODO
+               raise Program_Error with "TODO";
          end case;
       end Convert_Unop;
 
@@ -53,6 +56,9 @@ package body WACC.TACKY is
                return new WACC.TACKY.Binary_Operator_Node'(Typ => TA_Divide);
             when WACC.AST.N_Remainder =>
                return new WACC.TACKY.Binary_Operator_Node'(Typ => TA_Remainder);
+            when WACC.AST.N_And .. WACC.AST.N_Greater_Or_Equal =>
+               --  TODO
+               raise Program_Error with "TODO";
          end case;
       end Convert_Binop;
 

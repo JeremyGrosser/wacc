@@ -1,3 +1,4 @@
+pragma Style_Checks ("M120");
 with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 with Ada.Containers.Vectors;
 

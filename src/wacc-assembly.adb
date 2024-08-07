@@ -26,23 +26,47 @@ package body WACC.Assembly is
          end case;
       end Convert_Operand;
 
-      function Convert_Unary_Operator
-         (Tree : WACC.TACKY.Unary_Operator_Node)
-         return WACC.Assembly.Any_Unary_Operator_Node
+      procedure Generate_Unary_Operation
+         (Tree : WACC.TACKY.Instruction_Node;
+          Node : in out WACC.Assembly.Instruction_Node_Vectors.Vector)
       is
+         use WACC.Assembly.Instruction_Node_Vectors;
+         Dst : constant Any_Operand_Node := Convert_Operand (Tree.Unop_Dst.all);
       begin
-         case Tree.Typ is
+         case Tree.Unary_Operator.Typ is
             when WACC.TACKY.TA_Complement =>
-               return new WACC.Assembly.Unary_Operator_Node'
-                  (Typ => WACC.Assembly.A_Not);
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Mov,
+                   Src => Convert_Operand (Tree.Unop_Src.all),
+                   Dst => Dst));
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Unary,
+                   Unary_Operator => new Unary_Operator_Node'(Typ => A_Not),
+                   Unary_Operand => Dst));
             when WACC.TACKY.TA_Negate =>
-               return new WACC.Assembly.Unary_Operator_Node'
-                  (Typ => WACC.Assembly.A_Neg);
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Mov,
+                   Src => Convert_Operand (Tree.Unop_Src.all),
+                   Dst => Dst));
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Unary,
+                   Unary_Operator => new Unary_Operator_Node'(Typ => A_Neg),
+                   Unary_Operand => Dst));
             when WACC.TACKY.TA_Not =>
-               --  TODO
-               raise Program_Error;
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Cmp,
+                   A   => Convert_Operand (Tree.Unop_Src.all),
+                   B   => new Operand_Node'(Typ => A_Imm, Imm_Int => 0)));
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Mov,
+                   Src => new Operand_Node'(Typ => A_Imm, Imm_Int => 0),
+                   Dst => Dst));
+               Append (Node, new Instruction_Node'
+                  (Typ => A_SetCC,
+                   SetCC_Condition => E,
+                   SetCC_Operand => Dst));
          end case;
-      end Convert_Unary_Operator;
+      end Generate_Unary_Operation;
 
       procedure Generate_Binary_Operation
          (Tree : WACC.TACKY.Instruction_Node;
@@ -138,18 +162,7 @@ package body WACC.Assembly is
                Append (Node, new WACC.Assembly.Instruction_Node'
                   (Typ => WACC.Assembly.A_Ret));
             when WACC.TACKY.TA_Unary =>
-               declare
-                  Dst : constant Any_Operand_Node := Convert_Operand (Tree.Unop_Dst.all);
-               begin
-                  Append (Node, new WACC.Assembly.Instruction_Node'
-                     (Typ => WACC.Assembly.A_Mov,
-                      Src => Convert_Operand (Tree.Unop_Src.all),
-                      Dst => Dst));
-                  Append (Node, new WACC.Assembly.Instruction_Node'
-                     (Typ => WACC.Assembly.A_Unary,
-                      Unary_Operator => Convert_Unary_Operator (Tree.Unary_Operator.all),
-                      Unary_Operand => Dst));
-               end;
+               Generate_Unary_Operation (Tree, Node);
             when WACC.TACKY.TA_Binary =>
                Generate_Binary_Operation (Tree, Node);
             when WACC.TACKY.TA_Copy =>

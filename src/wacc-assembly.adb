@@ -68,6 +68,29 @@ package body WACC.Assembly is
          end case;
       end Generate_Unary_Operation;
 
+      function Convert_Condition
+         (Op : WACC.TACKY.Binary_Operator_Node)
+         return WACC.Assembly.Condition_Code
+      is
+      begin
+         case Op.Typ is
+            when WACC.TACKY.TA_Equal =>
+               return E;
+            when WACC.TACKY.TA_Not_Equal =>
+               return NE;
+            when WACC.TACKY.TA_Less_Than =>
+               return L;
+            when WACC.TACKY.TA_Less_Or_Equal =>
+               return LE;
+            when WACC.TACKY.TA_Greater_Than =>
+               return G;
+            when WACC.TACKY.TA_Greater_Or_Equal =>
+               return E;
+            when others =>
+               raise Assembly_Error with "Binary operator is not a condition: " & Op.Typ'Image;
+         end case;
+      end Convert_Condition;
+
       procedure Generate_Binary_Operation
          (Tree : WACC.TACKY.Instruction_Node;
           Node : in out WACC.Assembly.Instruction_Node_Vectors.Vector)
@@ -139,8 +162,19 @@ package body WACC.Assembly is
                    Src => new Operand_Node'(Typ => A_Reg, Reg => new Reg_Node'(Typ => A_DX)),
                    Dst => Convert_Operand (Tree.Binop_Dst.all)));
             when WACC.TACKY.TA_Equal .. WACC.TACKY.TA_Greater_Or_Equal =>
-               --  TODO
-               raise Program_Error;
+               Dst := Convert_Operand (Tree.Binop_Dst.all);
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Cmp,
+                   A => Convert_Operand (Tree.Binop_Src1.all),
+                   B => Convert_Operand (Tree.Binop_Src2.all)));
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Mov,
+                   Src => new Operand_Node'(Typ => A_Imm, Imm_Int => 0),
+                   Dst => Dst));
+               Append (Node, new Instruction_Node'
+                  (Typ => A_SetCC,
+                   SetCC_Condition => Convert_Condition (Tree.Binary_Operator.all),
+                   SetCC_Operand => Dst));
          end case;
       end Generate_Binary_Operation;
 
@@ -187,11 +221,11 @@ package body WACC.Assembly is
                Append (Node, new Instruction_Node'
                   (Typ => A_Cmp,
                    A => new Operand_Node'(Typ => A_Imm, Imm_Int => 0),
-                   B => Convert_Operand (Tree.JZ_Condition.all)));
+                   B => Convert_Operand (Tree.JNZ_Condition.all)));
                Append (Node, new Instruction_Node'
                   (Typ => A_JmpCC,
                    JmpCC_Condition => NE,
-                   JmpCC_Label => Tree.JZ_Target));
+                   JmpCC_Label => Tree.JNZ_Target));
             when WACC.TACKY.TA_Label =>
                Append (Node, new Instruction_Node'
                   (Typ => A_Label,

@@ -153,15 +153,36 @@ package body WACC.Assembly is
             when WACC.TACKY.TA_Binary =>
                Generate_Binary_Operation (Tree, Node);
             when WACC.TACKY.TA_Copy =>
-               raise Program_Error;
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Mov,
+                   Src => Convert_Operand (Tree.Copy_Src.all),
+                   Dst => Convert_Operand (Tree.Copy_Dst.all)));
             when WACC.TACKY.TA_Jump =>
-               raise Program_Error;
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Jmp,
+                   Jmp_Label => Tree.J_Target));
             when WACC.TACKY.TA_Jump_If_Zero =>
-               raise Program_Error;
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Cmp,
+                   A => Convert_Operand (Tree.JZ_Condition.all),
+                   B => new Operand_Node'(Typ => A_Imm, Imm_Int => 0)));
+               Append (Node, new Instruction_Node'
+                  (Typ => A_JmpCC,
+                   JmpCC_Condition => E,
+                   JmpCC_Label => Tree.JZ_Target));
             when WACC.TACKY.TA_Jump_If_Not_Zero =>
-               raise Program_Error;
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Cmp,
+                   A => new Operand_Node'(Typ => A_Imm, Imm_Int => 0),
+                   B => Convert_Operand (Tree.JZ_Condition.all)));
+               Append (Node, new Instruction_Node'
+                  (Typ => A_JmpCC,
+                   JmpCC_Condition => NE,
+                   JmpCC_Label => Tree.JZ_Target));
             when WACC.TACKY.TA_Label =>
-               raise Program_Error;
+               Append (Node, new Instruction_Node'
+                  (Typ => A_Label,
+                   Label => Tree.Label));
          end case;
       end Generate;
 
@@ -217,7 +238,12 @@ package body WACC.Assembly is
                Replace_Pseudo (Node.Binary_Dst);
             when A_Idiv =>
                Replace_Pseudo (Node.Idiv_Src);
-            when A_Cdq | A_Allocate_Stack | A_Ret =>
+            when A_Cmp =>
+               Replace_Pseudo (Node.A);
+               Replace_Pseudo (Node.B);
+            when A_SetCC =>
+               Replace_Pseudo (Node.SetCC_Operand);
+            when A_Cdq | A_Allocate_Stack | A_Ret | A_Jmp | A_JmpCC | A_Label =>
                null;
          end case;
       end Replace_Pseudo;
@@ -322,6 +348,28 @@ package body WACC.Assembly is
                    Binary_Src => Insn.Binary_Src,
                    Binary_Dst => Tmp));
                Append (Rewrite, new Instruction_Node'(Typ => A_Mov, Src => Tmp, Dst => Insn.Binary_Dst));
+            elsif Insn.Typ = A_Cmp and then
+                  Insn.A.Typ = A_Stack and then
+                  Insn.B.Typ = A_Stack
+            then
+               --  cmpl cannot use memory for both operands
+               Tmp := new Operand_Node'(Typ => A_Reg, Reg => new Reg_Node'(Typ => A_R10));
+               Append (Rewrite, new Instruction_Node'(Typ => A_Mov, Src => Insn.B, Dst => Tmp));
+               Append (Rewrite, new Instruction_Node'
+                  (Typ => A_Cmp,
+                   A => Insn.A,
+                   B => Tmp));
+               Append (Rewrite, new Instruction_Node'(Typ => A_Mov, Src => Tmp, Dst => Insn.B));
+            elsif Insn.Typ = A_Cmp and then
+                  Insn.A.Typ = A_Imm
+            then
+               --  cmpl b, a operand 'a' cannot be immediate, move it to a register
+               Tmp := new Operand_Node'(Typ => A_Reg, Reg => new Reg_Node'(Typ => A_R11));
+               Append (Rewrite, new Instruction_Node'(Typ => A_Mov, Src => Insn.A, Dst => Tmp));
+               Append (Rewrite, new Instruction_Node'
+                  (Typ => A_Cmp,
+                   A => Tmp,
+                   B => Insn.B));
             else
                Append (Rewrite, Insn);
             end if;
@@ -369,6 +417,15 @@ package body WACC.Assembly is
       begin
          Indent_Level := Indent_Level - 1;
       end Dedent;
+
+      procedure Print
+         (Node : Identifier)
+      is
+      begin
+         Indent;
+         Write (To_String (Node));
+         Dedent;
+      end Print;
 
       procedure Print
          (Node : WACC.Assembly.Reg_Node)
@@ -449,11 +506,31 @@ package body WACC.Assembly is
                Print (Node.Binary_Src.all);
                Write ("Dst = ");
                Print (Node.Binary_Dst.all);
+            when A_Cmp =>
+               Write ("A = ");
+               Print (Node.A.all);
+               Write ("B = ");
+               Print (Node.B.all);
             when A_Idiv =>
                Write ("Src = ");
                Print (Node.Idiv_Src.all);
             when A_Cdq =>
                null;
+            when A_Jmp =>
+               Write ("Label = ");
+               Print (Node.Jmp_Label);
+            when A_JmpCC =>
+               Write ("Condition = ");
+               Write (Node.JmpCC_Condition'Image);
+               Write ("Label = ");
+               Print (Node.JmpCC_Label);
+            when A_SetCC =>
+               Write ("Condition = ");
+               Write (Node.SetCC_Condition'Image);
+               Write ("Operand = ");
+               Print (Node.SetCC_Operand.all);
+            when A_Label =>
+               Print (Node.Label);
             when A_Allocate_Stack =>
                Write ("Size = ");
                Write (Node.Stack_Size'Image);
@@ -578,6 +655,27 @@ package body WACC.Assembly is
       end Print;
 
       procedure Print
+         (Cond : Condition_Code)
+      is
+      begin
+         case Cond is
+            when E => Write ("e");
+            when NE => Write ("ne");
+            when G => Write ("g");
+            when GE => Write ("ge");
+            when L => Write ("l");
+            when LE => Write ("le");
+         end case;
+      end Print;
+
+      procedure Print
+         (Name : Identifier)
+      is
+      begin
+         Write (To_String (Name));
+      end Print;
+
+      procedure Print
          (Node : WACC.Assembly.Instruction_Node)
       is
       begin
@@ -598,11 +696,33 @@ package body WACC.Assembly is
                Print (Node.Binary_Src.all);
                Write (", ");
                Print (Node.Binary_Dst.all);
+            when A_Cmp =>
+               Write ("cmpl ");
+               Print (Node.B.all);
+               Write (", ");
+               Print (Node.A.all);
             when A_Cdq =>
                Write ("cdq");
             when A_Idiv =>
                Write ("idivl ");
                Print (Node.Idiv_Src.all);
+            when A_Jmp =>
+               Write ("jmp .L");
+               Print (Node.Jmp_Label);
+            when A_JmpCC =>
+               Write ("j");
+               Print (Node.JmpCC_Condition);
+               Write (" .L");
+               Print (Node.JmpCC_Label);
+            when A_SetCC =>
+               Write ("set");
+               Print (Node.SetCC_Condition);
+               Write (" ");
+               Print (Node.SetCC_Operand.all);
+            when A_Label =>
+               Write (".L");
+               Print (Node.Label);
+               Write (":");
             when A_Allocate_Stack =>
                Write ("subq $");
                Write (Long_Integer (Node.Stack_Size));

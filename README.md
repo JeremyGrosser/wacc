@@ -158,3 +158,11 @@ I was forced to do a lot of refactoring in this stage. The short circuit
 evaluation of `&&` and `||` operators means that we have to be careful that the
 instructions to evaluate the left hand side are generated first so that we can
 add a comparison and jump afterward.
+
+I had a bug in assembly emission where `>=` was generating a `je` instruction
+rather than `jne`. This was caught by the book's test suite, but difficult to
+track down. The source was a simple typo, but I'm left wondering how I might've
+caught this one earlier, or found an easier way to pick it out of the generated
+assembly code. I miss having the C source inline in the objdump assembly
+output. Might be worth a side quest to figure out how to get that debugging
+information into the binary.

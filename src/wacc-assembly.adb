@@ -85,7 +85,7 @@ package body WACC.Assembly is
             when WACC.TACKY.TA_Greater_Than =>
                return G;
             when WACC.TACKY.TA_Greater_Or_Equal =>
-               return E;
+               return GE;
             when others =>
                raise Assembly_Error with "Binary operator is not a condition: " & Op.Typ'Image;
          end case;

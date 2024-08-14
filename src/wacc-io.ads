@@ -36,6 +36,11 @@ is
        return Character
    with Pre => Is_Open (File);
 
+   function Peek
+      (File : Reader)
+      return Character
+   with Pre => Is_Open (File);
+
    type Writer is limited private;
 
    function Is_Open

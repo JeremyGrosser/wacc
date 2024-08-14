@@ -166,3 +166,10 @@ caught this one earlier, or found an easier way to pick it out of the generated
 assembly code. I miss having the C source inline in the objdump assembly
 output. Might be worth a side quest to figure out how to get that debugging
 information into the binary.
+
+## Chapter 5: Local Variables
+The bug I encountered in Chapter 1 where `return2` was parsed as the `return`
+keyword came back to haunt me. I was missing `'0' .. '9'` character range in
+identifier names. Chapter 5 tests include a variable named `void2` which was
+incorrectly parsed as a `void` token. After fixing the lexer, I re-ran all of
+the previous chapters' tests and everything looks fine now.

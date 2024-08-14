@@ -33,9 +33,10 @@ is
        T_Less_Than,
        T_Greater_Than,
        T_Less_Equal,
-       T_Greater_Equal);
+       T_Greater_Equal,
+       T_Equal);
 
-   subtype Binary_Operator_Token_Type is Token_Type range T_Dash .. T_Greater_Equal;
+   subtype Binary_Operator_Token_Type is Token_Type range T_Dash .. T_Equal;
 
    type Token is record
       Typ : Token_Type;

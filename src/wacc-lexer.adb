@@ -22,7 +22,7 @@ package body WACC.Lexer is
          Ch : Character;
          T : Token;
       begin
-         T.Typ := T_int;
+         T.Typ := T_Constant;
          loop
             Ch := IO.Next (File);
             if Ch not in '0' .. '9' then
@@ -46,7 +46,7 @@ package body WACC.Lexer is
          T.Typ := T_Identifier;
          loop
             Ch := IO.Next (File);
-            exit when Ch not in 'a' .. 'z' | 'A' .. 'Z' | '_';
+            exit when Ch not in 'a' .. 'z' | 'A' .. 'Z' | '_' | '0' .. '9';
             Append (T.Literal, Ch);
             exit when IO.End_Of_File (File);
             IO.Advance (File);
@@ -121,6 +121,8 @@ package body WACC.Lexer is
             Add_Single (T_Less_Than);
          elsif Ch = '>' then
             Add_Single (T_Greater_Than);
+         elsif Ch = '=' then
+            Add_Single (T_Equal);
          elsif Ch = '(' then
             Add_Single (T_Open_Paren);
          elsif Ch = ')' then

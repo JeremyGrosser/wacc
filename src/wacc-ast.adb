@@ -30,6 +30,13 @@ package body WACC.AST is
       end Dedent;
 
       procedure Print
+         (This : Identifier)
+      is
+      begin
+         Log (To_String (This));
+      end Print;
+
+      procedure Print
          (This : Exp_Node);
 
       procedure Print
@@ -62,6 +69,8 @@ package body WACC.AST is
          case This.Typ is
             when N_Constant =>
                Log (This.Int'Image);
+            when N_Var =>
+               Print (This.Name);
             when N_Unary =>
                Print (This.Unary_Operator.all);
                Print (This.Exp.all);
@@ -75,6 +84,10 @@ package body WACC.AST is
                Indent;
                Print (This.Right.all);
                Dedent;
+            when N_Assignment =>
+               Print (This.Assign_Left.all);
+               Log (" = ");
+               Print (This.Assign_Right.all);
          end case;
          Dedent;
       end Print;
@@ -87,14 +100,52 @@ package body WACC.AST is
          Indent;
          Log (This.Typ'Image);
          case This.Typ is
-            when N_Return =>
+            when N_Return | N_Expression =>
                if This.Exp /= null then
                   Print (This.Exp.all);
                else
                   Log ("(null)");
                end if;
+            when N_Null =>
+               null;
          end case;
          Dedent;
+      end Print;
+
+      procedure Print
+         (This : Declaration_Node)
+      is
+      begin
+         Log ("Declaration");
+         Indent;
+         Print (This.Name);
+         if This.Init /= null then
+            Print (This.Init.all);
+         else
+            Log ("(null)");
+         end if;
+         Dedent;
+      end Print;
+
+      procedure Print
+         (This : Block_Item_Node)
+      is
+      begin
+         Log ("Block_Item");
+         Indent;
+         Log (This.Typ'Image);
+         case This.Typ is
+            when N_Statement =>
+               Print (This.Stmt.all);
+            when N_Declaration =>
+               Print (This.Decl.all);
+         end case;
+         Dedent;
+         if This.Next /= null then
+            Print (This.Next.all);
+         else
+            Log ("(End of Block_Item list)");
+         end if;
       end Print;
 
       procedure Print
@@ -103,8 +154,7 @@ package body WACC.AST is
       begin
          Log ("Function_Definition");
          Indent;
-         Log ("Name = " & To_String (This.Name));
-         Log ("FBody = ");
+         Print (This.Name);
          if This.FBody /= null then
             Print (This.FBody.all);
          else

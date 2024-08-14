@@ -193,6 +193,10 @@ package body WACC.TACKY is
                return Generate_Unary (Tree, Node);
             when WACC.AST.N_Binary =>
                return Generate_Binary (Tree, Node);
+            when WACC.AST.N_Var =>
+               raise Program_Error with "TODO";
+            when WACC.AST.N_Assignment =>
+               raise Program_Error with "TODO";
          end case;
       end Generate;
 
@@ -206,6 +210,31 @@ package body WACC.TACKY is
                Instruction_Node_Vectors.Append (Node, new WACC.TACKY.Instruction_Node'
                   (Typ => WACC.TACKY.TA_Return,
                    Val => Generate (Tree.Exp.all, Node)));
+            when WACC.AST.N_Expression =>
+               raise Program_Error with "TODO";
+            when WACC.AST.N_Null =>
+               raise Program_Error with "TODO";
+         end case;
+      end Generate;
+
+      procedure Generate
+         (Tree : WACC.AST.Declaration_Node;
+          Node : in out WACC.TACKY.Instruction_Node_Vectors.Vector)
+      is
+      begin
+         raise Program_Error with "TODO";
+      end Generate;
+
+      procedure Generate
+         (Tree : WACC.AST.Block_Item_Node;
+          Node : in out WACC.TACKY.Instruction_Node_Vectors.Vector)
+      is
+      begin
+         case Tree.Typ is
+            when WACC.AST.N_Statement =>
+               Generate (Tree.Stmt.all, Node);
+            when WACC.AST.N_Declaration =>
+               Generate (Tree.Decl.all, Node);
          end case;
       end Generate;
 
@@ -213,9 +242,15 @@ package body WACC.TACKY is
          (Tree : WACC.AST.Function_Definition_Node;
           Node : out WACC.TACKY.Function_Definition_Node)
       is
+         use type WACC.AST.Any_Block_Item_Node;
+         Item : WACC.AST.Any_Block_Item_Node;
       begin
          Node.Name := Tree.Name;
-         Generate (Tree.FBody.all, Node.FBody);
+         Item := Tree.FBody;
+         while Item /= null loop
+            Generate (Item.all, Node.FBody);
+            Item := Item.Next;
+         end loop;
       end Generate;
    begin
       Generate (Tree.Function_Definition, Node.Function_Definition);

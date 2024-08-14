@@ -45,6 +45,11 @@ package body WACC.IO is
        return Character
    is (if File.Index in File.Data'Range then File.Data.all (File.Index) else ASCII.NUL);
 
+   function Peek
+      (File : Reader)
+      return Character
+   is (if File.Index + 1 in File.Data'Range then File.Data.all (File.Index + 1) else ASCII.NUL);
+
    procedure Open
       (File : in out Writer;
        Filename : String)

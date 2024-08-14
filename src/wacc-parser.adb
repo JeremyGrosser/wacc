@@ -120,6 +120,8 @@ package body WACC.Parser is
                return 10;
             when T_Pipe_Pipe =>
                return 5;
+            when T_Equal =>
+               return 1;
          end case;
       end Precedence;
 
@@ -136,13 +138,22 @@ package body WACC.Parser is
             Typ := Next_Token.Typ;
             exit when Typ not in WACC.Lexer.Binary_Operator_Token_Type'Range
                       or else Precedence (Typ) < Min_Precedence;
-            Parse_Binop (Operator);
-            Parse_Exp (Right, Precedence (Typ) + 1);
-            Left := new WACC.AST.Exp_Node'
-               (Typ => WACC.AST.N_Binary,
-                Binary_Operator => Operator,
-                Left  => Left,
-                Right => Right);
+            if Typ = WACC.Lexer.T_Equal then
+               Delete_First (Input);
+               Parse_Exp (Right, Precedence (Typ));
+               Left := new WACC.AST.Exp_Node'
+                  (Typ          => WACC.AST.N_Assignment,
+                   Assign_Left  => Left,
+                   Assign_Right => Right);
+            else
+               Parse_Binop (Operator);
+               Parse_Exp (Right, Precedence (Typ) + 1);
+               Left := new WACC.AST.Exp_Node'
+                  (Typ             => WACC.AST.N_Binary,
+                   Binary_Operator => Operator,
+                   Left            => Left,
+                   Right           => Right);
+            end if;
          end loop;
       end Parse_Exp;
 
@@ -151,10 +162,15 @@ package body WACC.Parser is
       is
       begin
          case Next_Token.Typ is
-            when WACC.Lexer.T_int =>
+            when WACC.Lexer.T_Constant =>
                Node := new WACC.AST.Exp_Node'
                   (Typ => WACC.AST.N_Constant,
                    Int => Parse_Int (Ada.Strings.Unbounded.To_String (Next_Token.Literal)));
+               Delete_First (Input);
+            when WACC.Lexer.T_Identifier =>
+               Node := new WACC.AST.Exp_Node'
+                  (Typ  => WACC.AST.N_Var,
+                   Name => Next_Token.Literal);
                Delete_First (Input);
             when WACC.Lexer.T_Dash | WACC.Lexer.T_Tilde | WACC.Lexer.T_Bang =>
                Node := new WACC.AST.Exp_Node'(Typ => WACC.AST.N_Unary, others => <>);
@@ -173,15 +189,58 @@ package body WACC.Parser is
          (Node : out WACC.AST.Any_Statement_Node)
       is
       begin
-         Expect (WACC.Lexer.T_return);
-         Node := new WACC.AST.Statement_Node'(Typ => WACC.AST.N_Return, Exp => null);
-         Parse_Exp (Node.Exp);
+         case Next_Token.Typ is
+            when WACC.Lexer.T_return =>
+               Delete_First (Input);
+               Node := new WACC.AST.Statement_Node'(Typ => WACC.AST.N_Return, Exp => null);
+               Parse_Exp (Node.Exp);
+            when WACC.Lexer.T_Semicolon =>
+               null;
+            when others =>
+               Node := new WACC.AST.Statement_Node'(Typ => WACC.AST.N_Expression, Exp => null);
+               Parse_Exp (Node.Exp);
+         end case;
          Expect (WACC.Lexer.T_Semicolon);
       end Parse_Statement;
+
+      procedure Parse_Declaration
+         (Node : out WACC.AST.Any_Declaration_Node)
+      is
+      begin
+         Expect (WACC.Lexer.T_int);
+         if Next_Token.Typ = WACC.Lexer.T_Identifier then
+            Node := new WACC.AST.Declaration_Node'(Name => Next_Token.Literal, Init => null);
+            Delete_First (Input);
+         else
+            raise Parse_Error with "Expected identifier after ""int"" in declaration, got " & Next_Token.Typ'Image;
+         end if;
+
+         if Next_Token.Typ = WACC.Lexer.T_Equal then
+            Delete_First (Input);
+            Parse_Exp (Node.Init);
+         end if;
+         Expect (WACC.Lexer.T_Semicolon);
+      end Parse_Declaration;
+
+      procedure Parse_Block_Item
+         (Node : out WACC.AST.Any_Block_Item_Node)
+      is
+      begin
+         case Next_Token.Typ is
+            when WACC.Lexer.T_int =>
+               Node := new WACC.AST.Block_Item_Node'(Typ => WACC.AST.N_Declaration, others => <>);
+               Parse_Declaration (Node.Decl);
+            when others =>
+               Node := new WACC.AST.Block_Item_Node'(Typ => WACC.AST.N_Statement, others => <>);
+               Parse_Statement (Node.Stmt);
+         end case;
+      end Parse_Block_Item;
 
       procedure Parse_Function
          (Node : in out WACC.AST.Function_Definition_Node)
       is
+         use type WACC.AST.Any_Block_Item_Node;
+         Tail, Next : WACC.AST.Any_Block_Item_Node := null;
       begin
          Expect (WACC.Lexer.T_int);
          if Next_Token.Typ = WACC.Lexer.T_Identifier then
@@ -194,7 +253,16 @@ package body WACC.Parser is
          Expect (WACC.Lexer.T_void);
          Expect (WACC.Lexer.T_Close_Paren);
          Expect (WACC.Lexer.T_Open_Brace);
-         Parse_Statement (Node.FBody);
+
+         while Next_Token.Typ /= WACC.Lexer.T_Close_Brace loop
+            Parse_Block_Item (Next);
+            if Tail = null then
+               Node.FBody := Next;
+            else
+               Tail.Next := Next;
+            end if;
+            Tail := Next;
+         end loop;
          Expect (WACC.Lexer.T_Close_Brace);
       end Parse_Function;
    begin

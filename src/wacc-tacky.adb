@@ -256,6 +256,11 @@ package body WACC.TACKY is
             Generate (Item.all, Node.FBody);
             Item := Item.Next;
          end loop;
+         Instruction_Node_Vectors.Append (Node.FBody, new Instruction_Node'
+            (Typ => TA_Return,
+             Val => new Val_Node'
+               (Typ => TA_Constant,
+                Int => 0)));
       end Generate;
    begin
       Generate (Tree.Function_Definition, Node.Function_Definition);

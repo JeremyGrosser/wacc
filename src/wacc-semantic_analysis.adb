@@ -3,6 +3,10 @@ with WACC.Strings; use WACC.Strings;
 with Ada.Containers.Hashed_Maps;
 
 package body WACC.Semantic_Analysis is
+   --  There are two sets of procedures here, Resolve and Analyze.
+   --  Analyze is the top level tree walk. When it descends into a Statement or
+   --  Declaration it calls Resolve. Resolve procedures do variable renaming.
+   --  Analyze will be extended in the future to call more analysis passes.
 
    package Variable_Maps is new Ada.Containers.Hashed_Maps
       (Key_Type         => Identifier,

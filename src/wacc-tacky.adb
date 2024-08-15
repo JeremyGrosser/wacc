@@ -1,27 +1,7 @@
 pragma Style_Checks ("M120");
-with Ada.Strings.Unbounded;
 with Ada.Text_IO;
 
 package body WACC.TACKY is
-
-   Identifier_Index : Natural := 0;
-
-   function Make_Identifier
-      (Prefix : String := "tmp.")
-      return Identifier
-   is
-      use Ada.Strings.Unbounded;
-      S : Unbounded_String := To_Unbounded_String (Prefix);
-      N : constant String := Identifier_Index'Image;
-   begin
-      for Ch of N loop
-         if Ch /= ' ' then
-            Append (S, Ch);
-         end if;
-      end loop;
-      Identifier_Index := Identifier_Index + 1;
-      return Identifier (S);
-   end Make_Identifier;
 
    procedure Generate
       (Tree : WACC.AST.Program_Node;
@@ -196,9 +176,21 @@ package body WACC.TACKY is
             when WACC.AST.N_Binary =>
                return Generate_Binary (Tree, Node);
             when WACC.AST.N_Var =>
-               raise Program_Error with "TODO";
+               return new WACC.TACKY.Val_Node'
+                  (Typ  => WACC.TACKY.TA_Var,
+                   Name => Tree.Name);
             when WACC.AST.N_Assignment =>
-               raise Program_Error with "TODO";
+               declare
+                  Dest : constant Any_Val_Node := new Val_Node'
+                     (Typ  => TA_Var,
+                      Name => Tree.Assign_Left.Name);
+               begin
+                  Instruction_Node_Vectors.Append (Node, new Instruction_Node'
+                     (Typ      => TA_Copy,
+                      Copy_Src => Generate (Tree.Assign_Right.all, Node),
+                      Copy_Dst => Dest));
+                  return Dest;
+               end;
          end case;
       end Generate;
 
@@ -209,13 +201,18 @@ package body WACC.TACKY is
       begin
          case Tree.Typ is
             when WACC.AST.N_Return =>
-               Instruction_Node_Vectors.Append (Node, new WACC.TACKY.Instruction_Node'
-                  (Typ => WACC.TACKY.TA_Return,
+               Instruction_Node_Vectors.Append (Node, new Instruction_Node'
+                  (Typ => TA_Return,
                    Val => Generate (Tree.Exp.all, Node)));
             when WACC.AST.N_Expression =>
-               raise Program_Error with "TODO";
+               declare
+                  Result : Any_Val_Node
+                     with Unreferenced;
+               begin
+                  Result := Generate (Tree.Exp.all, Node);
+               end;
             when WACC.AST.N_Null =>
-               raise Program_Error with "TODO";
+               null;
          end case;
       end Generate;
 
@@ -223,8 +220,14 @@ package body WACC.TACKY is
          (Tree : WACC.AST.Declaration_Node;
           Node : in out WACC.TACKY.Instruction_Node_Vectors.Vector)
       is
+         use type WACC.AST.Any_Exp_Node;
       begin
-         raise Program_Error with "TODO";
+         if Tree.Init /= null then
+            Instruction_Node_Vectors.Append (Node, new Instruction_Node'
+               (Typ      => TA_Copy,
+                Copy_Src => Generate (Tree.Init.all, Node),
+                Copy_Dst => new Val_Node'(Typ => TA_Var, Name => Tree.Name)));
+         end if;
       end Generate;
 
       procedure Generate

@@ -195,7 +195,7 @@ package body WACC.Parser is
                Node := new WACC.AST.Statement_Node'(Typ => WACC.AST.N_Return, Exp => null);
                Parse_Exp (Node.Exp);
             when WACC.Lexer.T_Semicolon =>
-               null;
+               Node := new WACC.AST.Statement_Node'(Typ => WACC.AST.N_Null);
             when others =>
                Node := new WACC.AST.Statement_Node'(Typ => WACC.AST.N_Expression, Exp => null);
                Parse_Exp (Node.Exp);

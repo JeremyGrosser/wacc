@@ -173,3 +173,12 @@ keyword came back to haunt me. I was missing `'0' .. '9'` character range in
 identifier names. Chapter 5 tests include a variable named `void2` which was
 incorrectly parsed as a `void` token. After fixing the lexer, I re-ran all of
 the previous chapters' tests and everything looks fine now.
+
+The rest of the implementation went fairly smoothly once I got through reading
+the chapter, which took longer than usual as I kept losing focus. Variable
+resolution just doesn't excite me and feels like a bit of a chore.
+
+I refactored most of the `Unbounded_String` operations on `Identifier`s into a
+single `WACC.Strings` package just to avoid duplicating the `Make_Identifier`
+logic in both the `Semantic_Analysis` and `TACKY` packages. I expect the
+`Strings` package to grow more functionality over time.

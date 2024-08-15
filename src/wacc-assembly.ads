@@ -1,6 +1,6 @@
 pragma Style_Checks ("M120");
-with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 with Ada.Containers.Vectors;
+with WACC.Strings; use WACC.Strings;
 with WACC.TACKY;
 
 package WACC.Assembly is
@@ -25,7 +25,6 @@ package WACC.Assembly is
    --  cond_code = E | NE | G | GE | L | LE
    --  reg = AX | DX | R10 | R11
 
-   subtype Identifier is Unbounded_String;
    type Stack_Offset is new Integer range Integer'First .. -4;
 
    type Reg_Node_Type is (A_AX, A_DX, A_R10, A_R11);

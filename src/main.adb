@@ -11,6 +11,7 @@ with AAA.Processes;
 with WACC.Lexer;
 with WACC.AST;
 with WACC.Parser;
+with WACC.Semantic_Analysis;
 with WACC.TACKY;
 with WACC.Assembly;
 
@@ -44,7 +45,7 @@ procedure Main is
          "gcc" & "-E" & "-P" & Input_File & "-o" & Preprocessed_File);
    end Preprocess;
 
-   type Compile_Stage is (Lex, Parse, Tacky, Codegen, Final);
+   type Compile_Stage is (Lex, Parse, Validate, Tacky, Codegen, Final);
 
    procedure Compile
       (Preprocessed_File, Assembly_File : String;
@@ -62,7 +63,10 @@ procedure Main is
                --  Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, Tokens'Image);
             when Parse =>
                WACC.Parser.Parse_Program (Tokens, Tree);
-               WACC.AST.Print (Tree);
+               --  WACC.AST.Print (Tree);
+            when Validate =>
+               WACC.Semantic_Analysis.Analyze (Tree);
+               --  WACC.AST.Print (Tree);
             when Tacky =>
                WACC.TACKY.Generate (Tree, TAC);
                --  WACC.TACKY.Print (TAC);
@@ -116,6 +120,8 @@ begin
                Stage := Lex;
             elsif Arg (3 .. Arg'Last) = "parse" then
                Stage := Parse;
+            elsif Arg (3 .. Arg'Last) = "validate" then
+               Stage := Validate;
             elsif Arg (3 .. Arg'Last) = "tacky" then
                Stage := Tacky;
             elsif Arg (3 .. Arg'Last) = "codegen" then
@@ -132,7 +138,7 @@ begin
    if Input_File_Arg = 0 then
       Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error,
          "Usage: wacc" &
-         " [--lex] [--parse] [--tacky] [--codegen] " &
+         " [--lex] [--parse] [--validate] [--tacky] [--codegen] " &
          "<input file>");
       CLI.Set_Exit_Status (1);
       return;

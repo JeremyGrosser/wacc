@@ -1,4 +1,4 @@
-with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
+with WACC.Strings; use WACC.Strings;
 
 package WACC.AST
    with Elaborate_Body
@@ -18,8 +18,6 @@ is
    --  binary_operator = Add | Subtract | Multiply | Divide | Remainder | And
    --                  | Or | Equal | NotEqual | LessThan | LessOrEqual
    --                  | GreaterThan | GreaterOrEqual
-
-   subtype Identifier is Unbounded_String;
 
    type Binary_Operator_Type is
       (N_Add,

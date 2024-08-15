@@ -1,4 +1,5 @@
 pragma Style_Checks ("M120");
+with Ada.Strings.Unbounded;
 with Ada.Text_IO;
 
 package body WACC.TACKY is
@@ -9,6 +10,7 @@ package body WACC.TACKY is
       (Prefix : String := "tmp.")
       return Identifier
    is
+      use Ada.Strings.Unbounded;
       S : Unbounded_String := To_Unbounded_String (Prefix);
       N : constant String := Identifier_Index'Image;
    begin
@@ -18,7 +20,7 @@ package body WACC.TACKY is
          end if;
       end loop;
       Identifier_Index := Identifier_Index + 1;
-      return S;
+      return Identifier (S);
    end Make_Identifier;
 
    procedure Generate
@@ -283,7 +285,7 @@ package body WACC.TACKY is
       end Dedent;
 
       procedure Print
-         (Node : WACC.TACKY.Identifier)
+         (Node : WACC.Strings.Identifier)
       is
       begin
          Write (To_String (Node));

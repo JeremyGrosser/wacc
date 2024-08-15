@@ -1,5 +1,5 @@
-with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 with Ada.Containers.Vectors;
+with WACC.Strings; use WACC.Strings;
 with WACC.AST;
 
 package WACC.TACKY is
@@ -19,8 +19,6 @@ package WACC.TACKY is
    --  binary_operator = Add | Subtract | Multiply | Divide | Remainder | Equal
    --                  | NotEqual | LessThan | LessOrEqual | GreaterThan
    --                  | GreaterOrEqual
-
-   subtype Identifier is Unbounded_String;
 
    type Binary_Operator_Type is
       (TA_Add,

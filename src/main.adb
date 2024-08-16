@@ -63,7 +63,7 @@ procedure Main is
                --  Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, Tokens'Image);
             when Parse =>
                WACC.Parser.Parse_Program (Tokens, Tree);
-               --  WACC.AST.Print (Tree);
+               WACC.AST.Print (Tree);
             when Validate =>
                WACC.Semantic_Analysis.Analyze (Tree);
                --  WACC.AST.Print (Tree);

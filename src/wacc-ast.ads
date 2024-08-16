@@ -8,12 +8,16 @@ is
    --  function_definition = Function(identifier name, block_item *body)
    --  block_item = statement | declaration
    --  declaration = Declaration(identifier name, exp? init)
-   --  statement = Return(exp) | Expression(exp) | Null
+   --  statement = Return(exp)
+   --            | Expression(exp)
+   --            | If(exp condition, statement then, statement? else)
+   --            | Null
    --  exp = Constant(int)
    --      | Var(identifier)
    --      | Unary(unary_operator, exp)
    --      | Binary(binary_operator, exp, exp)
    --      | Assignment(exp, exp)
+   --      | Conditional(exp condition, exp, exp)
    --  unary_operator = Complement | Negate | Not
    --  binary_operator = Add | Subtract | Multiply | Divide | Remainder | And
    --                  | Or | Equal | NotEqual | LessThan | LessOrEqual
@@ -52,7 +56,8 @@ is
        N_Var,
        N_Unary,
        N_Binary,
-       N_Assignment);
+       N_Assignment,
+       N_Conditional);
 
    type Exp_Node;
    type Any_Exp_Node is access Exp_Node;
@@ -73,24 +78,34 @@ is
             Left, Right : Any_Exp_Node;
          when N_Assignment =>
             Assign_Left, Assign_Right : Any_Exp_Node;
+         when N_Conditional =>
+            Condition, If_True, If_False : Any_Exp_Node;
       end case;
    end record;
 
    type Statement_Type is
       (N_Return,
        N_Expression,
+       N_If,
        N_Null);
+
+   type Statement_Node;
+   type Any_Statement_Node is access Statement_Node;
+
    type Statement_Node
       (Typ : Statement_Type)
    is record
       case Typ is
          when N_Return | N_Expression =>
             Exp : Any_Exp_Node;
+         when N_If =>
+            Condition : Any_Exp_Node;
+            If_True   : Any_Statement_Node;
+            If_False  : Any_Statement_Node;
          when N_Null =>
             null;
       end case;
    end record;
-   type Any_Statement_Node is access Statement_Node;
 
    type Declaration_Node is record
       Name : Identifier;

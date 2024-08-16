@@ -191,6 +191,8 @@ package body WACC.TACKY is
                       Copy_Dst => Dest));
                   return Dest;
                end;
+            when WACC.AST.N_Conditional =>
+               raise Program_Error with "TODO";
          end case;
       end Generate;
 
@@ -211,6 +213,8 @@ package body WACC.TACKY is
                begin
                   Result := Generate (Tree.Exp.all, Node);
                end;
+            when WACC.AST.N_If =>
+               raise Program_Error with "TODO";
             when WACC.AST.N_Null =>
                null;
          end case;

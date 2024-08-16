@@ -88,6 +88,12 @@ package body WACC.AST is
                Print (This.Assign_Left.all);
                Log (" = ");
                Print (This.Assign_Right.all);
+            when N_Conditional =>
+               Print (This.Condition.all);
+               Log (" ? ");
+               Print (This.If_True.all);
+               Log (" : ");
+               Print (This.If_False.all);
          end case;
          Dedent;
       end Print;
@@ -105,6 +111,21 @@ package body WACC.AST is
                   Print (This.Exp.all);
                else
                   Log ("(null)");
+               end if;
+            when N_If =>
+               Log ("Condition");
+               Indent;
+               Print (This.Condition.all);
+               Dedent;
+               Log ("If_True");
+               Indent;
+               Print (This.If_True.all);
+               Dedent;
+               if This.If_False /= null then
+                  Log ("If_False");
+                  Indent;
+                  Print (This.If_False.all);
+                  Dedent;
                end if;
             when N_Null =>
                null;

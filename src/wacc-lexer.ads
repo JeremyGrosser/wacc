@@ -23,7 +23,6 @@ is
        T_Dash_Dash,
        T_Tilde,
        T_Bang,
-       T_Question,
        T_Colon,
 
        T_Dash,
@@ -33,6 +32,7 @@ is
        T_Percent,
        T_And_And,
        T_Pipe_Pipe,
+       T_Question,
        T_Equal_Equal,
        T_Bang_Equal,
        T_Less_Than,

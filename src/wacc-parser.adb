@@ -120,6 +120,8 @@ package body WACC.Parser is
                return 10;
             when T_Pipe_Pipe =>
                return 5;
+            when T_Question =>
+               return 3;
             when T_Equal =>
                return 1;
          end case;
@@ -127,9 +129,24 @@ package body WACC.Parser is
 
       procedure Parse_Exp
          (Left : out WACC.AST.Any_Exp_Node;
+          Min_Precedence : Operator_Precedence := Operator_Precedence'First);
+
+      function Parse_Condition_Middle
+         return WACC.AST.Any_Exp_Node
+      is
+         Middle : WACC.AST.Any_Exp_Node;
+      begin
+         Expect (WACC.Lexer.T_Question);
+         Parse_Exp (Middle);
+         Expect (WACC.Lexer.T_Colon);
+         return Middle;
+      end Parse_Condition_Middle;
+
+      procedure Parse_Exp
+         (Left : out WACC.AST.Any_Exp_Node;
           Min_Precedence : Operator_Precedence := Operator_Precedence'First)
       is
-         Right : WACC.AST.Any_Exp_Node;
+         Middle, Right : WACC.AST.Any_Exp_Node;
          Operator : WACC.AST.Any_Binary_Operator_Node;
          Typ : WACC.Lexer.Token_Type;
       begin
@@ -145,6 +162,14 @@ package body WACC.Parser is
                   (Typ          => WACC.AST.N_Assignment,
                    Assign_Left  => Left,
                    Assign_Right => Right);
+            elsif Typ = WACC.Lexer.T_Question then
+               Middle := Parse_Condition_Middle;
+               Parse_Exp (Right, Precedence (Typ));
+               Left := new WACC.AST.Exp_Node'
+                  (Typ       => WACC.AST.N_Conditional,
+                   Condition => Left,
+                   If_True   => Middle,
+                   If_False  => Right);
             else
                Parse_Binop (Operator);
                Parse_Exp (Right, Precedence (Typ) + 1);
@@ -194,13 +219,28 @@ package body WACC.Parser is
                Delete_First (Input);
                Node := new WACC.AST.Statement_Node'(Typ => WACC.AST.N_Return, Exp => null);
                Parse_Exp (Node.Exp);
+               Expect (WACC.Lexer.T_Semicolon);
             when WACC.Lexer.T_Semicolon =>
                Node := new WACC.AST.Statement_Node'(Typ => WACC.AST.N_Null);
+               Expect (WACC.Lexer.T_Semicolon);
+            when WACC.Lexer.T_if =>
+               Delete_First (Input);
+               Expect (WACC.Lexer.T_Open_Paren);
+               Node := new WACC.AST.Statement_Node'(Typ => WACC.AST.N_If, others => <>);
+               Parse_Exp (Node.Condition);
+               Expect (WACC.Lexer.T_Close_Paren);
+               Parse_Statement (Node.If_True);
+               if Next_Token.Typ = WACC.Lexer.T_else then
+                  Delete_First (Input);
+                  Parse_Statement (Node.If_False);
+               else
+                  Node.If_False := null;
+               end if;
             when others =>
                Node := new WACC.AST.Statement_Node'(Typ => WACC.AST.N_Expression, Exp => null);
                Parse_Exp (Node.Exp);
+               Expect (WACC.Lexer.T_Semicolon);
          end case;
-         Expect (WACC.Lexer.T_Semicolon);
       end Parse_Statement;
 
       procedure Parse_Declaration

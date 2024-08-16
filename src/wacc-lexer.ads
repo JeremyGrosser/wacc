@@ -15,6 +15,7 @@ is
        T_return,
        T_if,
        T_else,
+       T_goto,
        T_Open_Paren,
        T_Close_Paren,
        T_Open_Brace,

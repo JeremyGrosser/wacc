@@ -1,5 +1,6 @@
 pragma Style_Checks ("M120");
 with Ada.Strings.Unbounded;
+with Ada.Containers;
 
 package body WACC.Parser is
 
@@ -14,6 +15,10 @@ package body WACC.Parser is
       function Next_Token
          return WACC.Lexer.Token
       is (First_Element (Input));
+
+      function Peek_Token
+         return WACC.Lexer.Token
+      is (Element (Input, First_Index (Input) + 1));
 
       procedure Expect
          (Typ : WACC.Lexer.Token_Type)
@@ -213,6 +218,7 @@ package body WACC.Parser is
       procedure Parse_Statement
          (Node : out WACC.AST.Any_Statement_Node)
       is
+         use type Ada.Containers.Count_Type;
       begin
          case Next_Token.Typ is
             when WACC.Lexer.T_return =>
@@ -236,10 +242,28 @@ package body WACC.Parser is
                else
                   Node.If_False := null;
                end if;
-            when others =>
-               Node := new WACC.AST.Statement_Node'(Typ => WACC.AST.N_Expression, Exp => null);
-               Parse_Exp (Node.Exp);
+            when WACC.Lexer.T_goto =>
+               Delete_First (Input);
+               Node := new WACC.AST.Statement_Node'
+                  (Typ   => WACC.AST.N_Goto,
+                   Label => Next_Token.Literal);
+               Delete_First (Input);
                Expect (WACC.Lexer.T_Semicolon);
+            when others =>
+               if Next_Token.Typ = WACC.Lexer.T_Identifier and then
+                  Length (Input) > 1 and then
+                  Peek_Token.Typ = WACC.Lexer.T_Colon
+               then
+                  Node := new WACC.AST.Statement_Node'
+                     (Typ   => WACC.AST.N_Label,
+                      Label => Next_Token.Literal);
+                  Delete_First (Input);
+                  Expect (WACC.Lexer.T_Colon);
+               else
+                  Node := new WACC.AST.Statement_Node'(Typ => WACC.AST.N_Expression, Exp => null);
+                  Parse_Exp (Node.Exp);
+                  Expect (WACC.Lexer.T_Semicolon);
+               end if;
          end case;
       end Parse_Statement;
 

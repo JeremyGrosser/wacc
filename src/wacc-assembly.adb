@@ -767,9 +767,11 @@ package body WACC.Assembly is
                Write (" ");
                Print (Node.SetCC_Operand.all);
             when A_Label =>
+               New_Line;
                Write (".L");
                Print (Node.Label);
                Write (":");
+               Indent;
             when A_Allocate_Stack =>
                Write ("subq $");
                Write (Long_Integer (Node.Stack_Size));

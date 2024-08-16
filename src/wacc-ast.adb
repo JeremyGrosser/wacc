@@ -127,6 +127,8 @@ package body WACC.AST is
                   Print (This.If_False.all);
                   Dedent;
                end if;
+            when N_Goto | N_Label =>
+               Print (This.Label);
             when N_Null =>
                null;
          end case;

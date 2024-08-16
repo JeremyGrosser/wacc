@@ -11,6 +11,8 @@ is
    --  statement = Return(exp)
    --            | Expression(exp)
    --            | If(exp condition, statement then, statement? else)
+   --            | Goto(identifier label)
+   --            | Label(identifier name)
    --            | Null
    --  exp = Constant(int)
    --      | Var(identifier)
@@ -87,6 +89,8 @@ is
       (N_Return,
        N_Expression,
        N_If,
+       N_Goto,
+       N_Label,
        N_Null);
 
    type Statement_Node;
@@ -102,6 +106,8 @@ is
             Condition : Any_Exp_Node;
             If_True   : Any_Statement_Node;
             If_False  : Any_Statement_Node;
+         when N_Goto | N_Label =>
+            Label : Identifier;
          when N_Null =>
             null;
       end case;

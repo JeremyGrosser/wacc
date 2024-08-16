@@ -1,22 +1,30 @@
 pragma Style_Checks ("M120");
 with WACC.Strings; use WACC.Strings;
 with Ada.Containers.Hashed_Maps;
+with Ada.Containers.Hashed_Sets;
 
 package body WACC.Semantic_Analysis is
-   --  There are two sets of procedures here, Resolve and Analyze.
+   --  There are two sets of procedures here, Resolve_Variables and Analyze.
    --  Analyze is the top level tree walk. When it descends into a Statement or
-   --  Declaration it calls Resolve. Resolve procedures do variable renaming.
+   --  Declaration it calls Resolve_Variables. Resolve_Variables procedures do variable renaming.
    --  Analyze will be extended in the future to call more analysis passes.
 
-   package Variable_Maps is new Ada.Containers.Hashed_Maps
+   package Identifier_Maps is new Ada.Containers.Hashed_Maps
       (Key_Type         => Identifier,
        Element_Type     => Identifier,
        Hash             => WACC.Strings.Hash,
        Equivalent_Keys  => WACC.Strings."=");
-   use Variable_Maps;
-   Vars : Variable_Maps.Map := Variable_Maps.Empty_Map;
+   use Identifier_Maps;
+   Vars : Identifier_Maps.Map := Identifier_Maps.Empty_Map;
 
-   procedure Resolve
+   package Identifier_Sets is new Ada.Containers.Hashed_Sets
+      (Element_Type        => Identifier,
+       Hash                => WACC.Strings.Hash,
+       Equivalent_Elements => WACC.Strings."=");
+   use Identifier_Sets;
+   Labels : Identifier_Sets.Set := Identifier_Sets.Empty_Set;
+
+   procedure Resolve_Variables
       (Exp : in out WACC.AST.Exp_Node)
    is
       use type WACC.AST.Exp_Type;
@@ -31,25 +39,25 @@ package body WACC.Semantic_Analysis is
                raise Semantic_Error with "Undeclared variable in initializer: " & To_String (Exp.Name);
             end if;
          when WACC.AST.N_Unary =>
-            Resolve (Exp.Exp.all);
+            Resolve_Variables (Exp.Exp.all);
          when WACC.AST.N_Binary =>
-            Resolve (Exp.Left.all);
-            Resolve (Exp.Right.all);
+            Resolve_Variables (Exp.Left.all);
+            Resolve_Variables (Exp.Right.all);
          when WACC.AST.N_Assignment =>
             if Exp.Assign_Left.Typ /= WACC.AST.N_Var then
                raise Semantic_Error with "Invalid lvalue!";
             else
-               Resolve (Exp.Assign_Left.all);
-               Resolve (Exp.Assign_Right.all);
+               Resolve_Variables (Exp.Assign_Left.all);
+               Resolve_Variables (Exp.Assign_Right.all);
             end if;
          when WACC.AST.N_Conditional =>
-            Resolve (Exp.Condition.all);
-            Resolve (Exp.If_True.all);
-            Resolve (Exp.If_False.all);
+            Resolve_Variables (Exp.Condition.all);
+            Resolve_Variables (Exp.If_True.all);
+            Resolve_Variables (Exp.If_False.all);
       end case;
-   end Resolve;
+   end Resolve_Variables;
 
-   procedure Resolve
+   procedure Resolve_Variables
       (Decl : in out WACC.AST.Declaration_Node)
    is
    begin
@@ -65,44 +73,73 @@ package body WACC.Semantic_Analysis is
       begin
          Include (Vars, Decl.Name, Unique);
          if Decl.Init /= null then
-            Resolve (Decl.Init.all);
+            Resolve_Variables (Decl.Init.all);
          end if;
 
          Decl.Name := Unique;
       end;
-   end Resolve;
+   end Resolve_Variables;
 
-   procedure Resolve
+   procedure Resolve_Variables
       (Tree : in out WACC.AST.Statement_Node)
    is
       use type WACC.AST.Any_Statement_Node;
    begin
       case Tree.Typ is
          when WACC.AST.N_Return | WACC.AST.N_Expression =>
-            Resolve (Tree.Exp.all);
+            Resolve_Variables (Tree.Exp.all);
          when WACC.AST.N_If =>
-            Resolve (Tree.Condition.all);
-            Resolve (Tree.If_True.all);
+            Resolve_Variables (Tree.Condition.all);
+            Resolve_Variables (Tree.If_True.all);
             if Tree.If_False /= null then
-               Resolve (Tree.If_False.all);
+               Resolve_Variables (Tree.If_False.all);
             end if;
-         when WACC.AST.N_Null =>
+         when WACC.AST.N_Goto | WACC.AST.N_Label | WACC.AST.N_Null =>
             null;
       end case;
-   end Resolve;
+   end Resolve_Variables;
+
+   procedure Resolve_Labels
+      (Tree : in out WACC.AST.Statement_Node;
+       Next : WACC.AST.Any_Block_Item_Node)
+   is
+      use type WACC.AST.Any_Block_Item_Node;
+      use type WACC.AST.Block_Item_Type;
+   begin
+      case Tree.Typ is
+         when WACC.AST.N_Label =>
+            if Contains (Labels, Tree.Label) then
+               raise Semantic_Error with "Label names must be unique within a function";
+            else
+               Include (Labels, Tree.Label);
+            end if;
+
+            if Next = null then
+               raise Semantic_Error with "Label without statement";
+            elsif Next.Typ = WACC.AST.N_Declaration then
+               raise Semantic_Error with "Label must be followed by a statement, not a declaration";
+            end if;
+         when WACC.AST.N_Goto =>
+            null;
+         when others =>
+            null;
+      end case;
+   end Resolve_Labels;
 
    procedure Analyze
-      (Tree : in out WACC.AST.Statement_Node)
+      (Tree : in out WACC.AST.Statement_Node;
+       Next : WACC.AST.Any_Block_Item_Node)
    is
    begin
-      Resolve (Tree);
+      Resolve_Variables (Tree);
+      Resolve_Labels (Tree, Next);
    end Analyze;
 
    procedure Analyze
       (Tree : in out WACC.AST.Declaration_Node)
    is
    begin
-      Resolve (Tree);
+      Resolve_Variables (Tree);
    end Analyze;
 
    procedure Analyze
@@ -111,7 +148,7 @@ package body WACC.Semantic_Analysis is
    begin
       case Tree.Typ is
          when WACC.AST.N_Statement =>
-            Analyze (Tree.Stmt.all);
+            Analyze (Tree.Stmt.all, Next => Tree.Next);
          when WACC.AST.N_Declaration =>
             Analyze (Tree.Decl.all);
       end case;

@@ -274,6 +274,8 @@ package body WACC.TACKY is
                      (Typ          => TA_Label,
                       Label        => End_Label));
                end;
+            when WACC.AST.N_Compound =>
+               raise Program_Error with "TODO";
             when WACC.AST.N_Goto =>
                Append (Node, new Instruction_Node'
                   (Typ      => TA_Jump,
@@ -322,7 +324,7 @@ package body WACC.TACKY is
          Item : WACC.AST.Any_Block_Item_Node;
       begin
          Node.Name := Tree.Name;
-         Item := Tree.FBody;
+         Item := Tree.FBody.Head; --  TODO Generate Block_Node
          while Item /= null loop
             Generate (Item.all, Node.FBody);
             Item := Item.Next;

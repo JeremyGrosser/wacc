@@ -5,12 +5,14 @@ package WACC.AST
 is
 
    --  program = Program(function_definition)
-   --  function_definition = Function(identifier name, block_item *body)
+   --  function_definition = Function(identifier name, block body)
    --  block_item = statement | declaration
+   --  block = Block(block_item*)
    --  declaration = Declaration(identifier name, exp? init)
    --  statement = Return(exp)
    --            | Expression(exp)
    --            | If(exp condition, statement then, statement? else)
+   --            | Compound(block)
    --            | Goto(identifier label)
    --            | Label(identifier name)
    --            | Null
@@ -85,10 +87,14 @@ is
       end case;
    end record;
 
+   type Block_Node;
+   type Any_Block_Node is access Block_Node;
+
    type Statement_Type is
       (N_Return,
        N_Expression,
        N_If,
+       N_Compound,
        N_Goto,
        N_Label,
        N_Null);
@@ -106,6 +112,8 @@ is
             Condition : Any_Exp_Node;
             If_True   : Any_Statement_Node;
             If_False  : Any_Statement_Node;
+         when N_Compound =>
+            Block : Any_Block_Node;
          when N_Goto | N_Label =>
             Label : Identifier;
          when N_Null =>
@@ -137,9 +145,13 @@ is
       end case;
    end record;
 
+   type Block_Node is record
+      Head : Any_Block_Item_Node;
+   end record;
+
    type Function_Definition_Node is record
       Name  : Identifier;
-      FBody : Any_Block_Item_Node;
+      FBody : Any_Block_Node;
    end record;
 
    type Program_Node is record

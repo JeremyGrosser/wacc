@@ -100,6 +100,8 @@ package body WACC.Semantic_Analysis is
             if Tree.If_False /= null then
                Resolve_Variables (Tree.If_False.all);
             end if;
+         when WACC.AST.N_Compound =>
+            raise Program_Error with "TODO";
          when WACC.AST.N_Goto | WACC.AST.N_Label | WACC.AST.N_Null =>
             null;
       end case;
@@ -171,16 +173,23 @@ package body WACC.Semantic_Analysis is
    end Analyze;
 
    procedure Analyze
-      (Tree : in out WACC.AST.Function_Definition_Node)
+      (Tree : in out WACC.AST.Block_Node)
    is
       use type WACC.AST.Any_Block_Item_Node;
-      Node : WACC.AST.Any_Block_Item_Node := Tree.FBody;
+      Node : WACC.AST.Any_Block_Item_Node := Tree.Head;
    begin
       Reset_Context;
       while Node /= null loop
          Analyze (Node.all);
          Node := Node.Next;
       end loop;
+   end Analyze;
+
+   procedure Analyze
+      (Tree : in out WACC.AST.Function_Definition_Node)
+   is
+   begin
+      Analyze (Tree.FBody.all);
    end Analyze;
 
    procedure Analyze

@@ -99,6 +99,9 @@ package body WACC.AST is
       end Print;
 
       procedure Print
+         (This : Block_Node);
+
+      procedure Print
          (This : Statement_Node)
       is
       begin
@@ -127,6 +130,8 @@ package body WACC.AST is
                   Print (This.If_False.all);
                   Dedent;
                end if;
+            when N_Compound =>
+               Print (This.Block.all);
             when N_Goto | N_Label =>
                Print (This.Label);
             when N_Null =>
@@ -169,6 +174,16 @@ package body WACC.AST is
          else
             Log ("(End of Block_Item list)");
          end if;
+      end Print;
+
+      procedure Print
+         (This : Block_Node)
+      is
+      begin
+         Log ("Block");
+         Indent;
+         Print (This.Head.all);
+         Dedent;
       end Print;
 
       procedure Print

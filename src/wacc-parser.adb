@@ -147,6 +147,9 @@ package body WACC.Parser is
          return Middle;
       end Parse_Condition_Middle;
 
+      procedure Parse_Block
+         (Node : out WACC.AST.Any_Block_Node);
+
       procedure Parse_Exp
          (Left : out WACC.AST.Any_Exp_Node;
           Min_Precedence : Operator_Precedence := Operator_Precedence'First)
@@ -249,6 +252,9 @@ package body WACC.Parser is
                    Label => Next_Token.Literal);
                Delete_First (Input);
                Expect (WACC.Lexer.T_Semicolon);
+            when WACC.Lexer.T_Open_Brace =>
+               Node := new WACC.AST.Statement_Node'(Typ => WACC.AST.N_Compound, Block => null);
+               Parse_Block (Node.Block);
             when others =>
                if Next_Token.Typ = WACC.Lexer.T_Identifier and then
                   Length (Input) > 1 and then
@@ -300,11 +306,30 @@ package body WACC.Parser is
          end case;
       end Parse_Block_Item;
 
-      procedure Parse_Function
-         (Node : in out WACC.AST.Function_Definition_Node)
+      procedure Parse_Block
+         (Node : out WACC.AST.Any_Block_Node)
       is
          use type WACC.AST.Any_Block_Item_Node;
          Tail, Next : WACC.AST.Any_Block_Item_Node := null;
+      begin
+         Expect (WACC.Lexer.T_Open_Brace);
+         Node := new WACC.AST.Block_Node'(Head => null);
+
+         while Next_Token.Typ /= WACC.Lexer.T_Close_Brace loop
+            Parse_Block_Item (Next);
+            if Tail = null then
+               Node.Head := Next;
+            else
+               Tail.Next := Next;
+            end if;
+            Tail := Next;
+         end loop;
+         Expect (WACC.Lexer.T_Close_Brace);
+      end Parse_Block;
+
+      procedure Parse_Function
+         (Node : in out WACC.AST.Function_Definition_Node)
+      is
       begin
          Expect (WACC.Lexer.T_int);
          if Next_Token.Typ = WACC.Lexer.T_Identifier then
@@ -316,18 +341,7 @@ package body WACC.Parser is
          Expect (WACC.Lexer.T_Open_Paren);
          Expect (WACC.Lexer.T_void);
          Expect (WACC.Lexer.T_Close_Paren);
-         Expect (WACC.Lexer.T_Open_Brace);
-
-         while Next_Token.Typ /= WACC.Lexer.T_Close_Brace loop
-            Parse_Block_Item (Next);
-            if Tail = null then
-               Node.FBody := Next;
-            else
-               Tail.Next := Next;
-            end if;
-            Tail := Next;
-         end loop;
-         Expect (WACC.Lexer.T_Close_Brace);
+         Parse_Block (Node.FBody);
       end Parse_Function;
    begin
       Parse_Function (Tree.Function_Definition);

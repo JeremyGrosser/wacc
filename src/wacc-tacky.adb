@@ -165,19 +165,20 @@ package body WACC.TACKY is
           Node : in out WACC.TACKY.Instruction_Node_Vectors.Vector)
           return Any_Val_Node
       is
+         use WACC.TACKY.Instruction_Node_Vectors;
       begin
          case Tree.Typ is
             when WACC.AST.N_Constant =>
-               return new WACC.TACKY.Val_Node'
-                  (Typ => WACC.TACKY.TA_Constant,
+               return new Val_Node'
+                  (Typ => TA_Constant,
                    Int => Tree.Int);
             when WACC.AST.N_Unary =>
                return Generate_Unary (Tree, Node);
             when WACC.AST.N_Binary =>
                return Generate_Binary (Tree, Node);
             when WACC.AST.N_Var =>
-               return new WACC.TACKY.Val_Node'
-                  (Typ  => WACC.TACKY.TA_Var,
+               return new Val_Node'
+                  (Typ  => TA_Var,
                    Name => Tree.Name);
             when WACC.AST.N_Assignment =>
                declare
@@ -185,14 +186,36 @@ package body WACC.TACKY is
                      (Typ  => TA_Var,
                       Name => Tree.Assign_Left.Name);
                begin
-                  Instruction_Node_Vectors.Append (Node, new Instruction_Node'
+                  Append (Node, new Instruction_Node'
                      (Typ      => TA_Copy,
                       Copy_Src => Generate (Tree.Assign_Right.all, Node),
                       Copy_Dst => Dest));
                   return Dest;
                end;
             when WACC.AST.N_Conditional =>
-               raise Program_Error with "TODO";
+               declare
+                  False_Label : constant Identifier := Make_Identifier ("if_false.");
+                  End_Label   : constant Identifier := Make_Identifier ("end_if.");
+                  Condition_Result, Exp_Result : Any_Val_Node;
+               begin
+                  Condition_Result := Generate (Tree.Condition.all, Node);
+                  Append (Node, new Instruction_Node'
+                     (Typ          => TA_Jump_If_Zero,
+                      JZ_Condition => Condition_Result,
+                      JZ_Target    => False_Label));
+                  Exp_Result := Generate (Tree.If_True.all, Node);
+                  Append (Node, new Instruction_Node'
+                     (Typ          => TA_Jump,
+                      J_Target     => End_Label));
+                  Append (Node, new Instruction_Node'
+                     (Typ          => TA_Label,
+                      Label        => False_Label));
+                  Exp_Result := Generate (Tree.If_False.all, Node);
+                  Append (Node, new Instruction_Node'
+                     (Typ          => TA_Label,
+                      Label        => End_Label));
+                  return Exp_Result;
+               end;
          end case;
       end Generate;
 
@@ -200,10 +223,11 @@ package body WACC.TACKY is
          (Tree : WACC.AST.Statement_Node;
           Node : in out WACC.TACKY.Instruction_Node_Vectors.Vector)
       is
+         use Instruction_Node_Vectors;
       begin
          case Tree.Typ is
             when WACC.AST.N_Return =>
-               Instruction_Node_Vectors.Append (Node, new Instruction_Node'
+               Append (Node, new Instruction_Node'
                   (Typ => TA_Return,
                    Val => Generate (Tree.Exp.all, Node)));
             when WACC.AST.N_Expression =>
@@ -214,7 +238,31 @@ package body WACC.TACKY is
                   Result := Generate (Tree.Exp.all, Node);
                end;
             when WACC.AST.N_If =>
-               raise Program_Error with "TODO";
+               declare
+                  use type WACC.AST.Any_Statement_Node;
+                  False_Label : constant Identifier := Make_Identifier ("if_false.");
+                  End_Label   : constant Identifier := Make_Identifier ("end_if.");
+                  Condition_Result : Any_Val_Node;
+               begin
+                  Condition_Result := Generate (Tree.Condition.all, Node);
+                  Append (Node, new Instruction_Node'
+                     (Typ          => TA_Jump_If_Zero,
+                      JZ_Condition => Condition_Result,
+                      JZ_Target    => False_Label));
+                  Generate (Tree.If_True.all, Node);
+                  Append (Node, new Instruction_Node'
+                     (Typ          => TA_Jump,
+                      J_Target     => End_Label));
+                  Append (Node, new Instruction_Node'
+                     (Typ          => TA_Label,
+                      Label        => False_Label));
+                  if Tree.If_False /= null then
+                     Generate (Tree.If_False.all, Node);
+                  end if;
+                  Append (Node, new Instruction_Node'
+                     (Typ          => TA_Label,
+                      Label        => End_Label));
+               end;
             when WACC.AST.N_Null =>
                null;
          end case;

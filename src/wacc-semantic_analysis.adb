@@ -15,14 +15,20 @@ package body WACC.Semantic_Analysis is
        Hash             => WACC.Strings.Hash,
        Equivalent_Keys  => WACC.Strings."=");
    use Identifier_Maps;
-   Vars : Identifier_Maps.Map := Identifier_Maps.Empty_Map;
+   Vars : Identifier_Maps.Map;
 
    package Identifier_Sets is new Ada.Containers.Hashed_Sets
       (Element_Type        => Identifier,
        Hash                => WACC.Strings.Hash,
        Equivalent_Elements => WACC.Strings."=");
    use Identifier_Sets;
-   Labels : Identifier_Sets.Set := Identifier_Sets.Empty_Set;
+   Labels : Identifier_Sets.Set;
+
+   procedure Reset_Context is
+   begin
+      Clear (Vars);
+      Clear (Labels);
+   end Reset_Context;
 
    procedure Resolve_Variables
       (Exp : in out WACC.AST.Exp_Node)
@@ -114,11 +120,21 @@ package body WACC.Semantic_Analysis is
                Include (Labels, Tree.Label);
             end if;
 
-            if Next = null then
-               raise Semantic_Error with "Label without statement";
-            elsif Next.Typ = WACC.AST.N_Declaration then
-               raise Semantic_Error with "Label must be followed by a statement, not a declaration";
-            end if;
+            declare
+               use type WACC.AST.Any_Exp_Node;
+               N : WACC.AST.Any_Block_Item_Node := Next;
+            begin
+               while N /= null and then N.Typ = WACC.AST.N_Declaration loop
+                  if N.Decl.Init /= null then
+                     raise Semantic_Error with "Label cannot precede a declaration with initializer.";
+                  end if;
+                  N := N.Next;
+               end loop;
+
+               if N = null then
+                  raise Semantic_Error with "Label must precede a statement";
+               end if;
+            end;
          when WACC.AST.N_Goto =>
             null;
          when others =>
@@ -160,6 +176,7 @@ package body WACC.Semantic_Analysis is
       use type WACC.AST.Any_Block_Item_Node;
       Node : WACC.AST.Any_Block_Item_Node := Tree.FBody;
    begin
+      Reset_Context;
       while Node /= null loop
          Analyze (Node.all);
          Node := Node.Next;

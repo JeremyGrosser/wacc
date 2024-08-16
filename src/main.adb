@@ -23,12 +23,12 @@ procedure Main is
    is
       Status : AAA.Processes.Result;
    begin
-      Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, AAA.Strings.Flatten (Cmd));
       Status := AAA.Processes.Run
          (Command_Line     => Cmd,
           Err_To_Out       => True,
           Raise_On_Error   => False);
       if Status.Exit_Code /= 0 then
+         Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, AAA.Strings.Flatten (Cmd));
          for O of Status.Output loop
             Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, O);
          end loop;
@@ -173,6 +173,8 @@ begin
             Ada.Directories.Delete_File (Object_File);
          end if;
       end if;
+
+      Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, "    WACC " & Basename & ".c");
    exception
       when E : WACC.Lexer.Lex_Error | WACC.Parser.Parse_Error | WACC.Assembly.Assembly_Error =>
          if not Keep_Files then

@@ -43,7 +43,9 @@ package body WACC.Semantic_Analysis is
                Resolve (Exp.Assign_Right.all);
             end if;
          when WACC.AST.N_Conditional =>
-            raise Program_Error with "TODO";
+            Resolve (Exp.Condition.all);
+            Resolve (Exp.If_True.all);
+            Resolve (Exp.If_False.all);
       end case;
    end Resolve;
 
@@ -73,12 +75,17 @@ package body WACC.Semantic_Analysis is
    procedure Resolve
       (Tree : in out WACC.AST.Statement_Node)
    is
+      use type WACC.AST.Any_Statement_Node;
    begin
       case Tree.Typ is
          when WACC.AST.N_Return | WACC.AST.N_Expression =>
             Resolve (Tree.Exp.all);
          when WACC.AST.N_If =>
-            raise Program_Error with "TODO";
+            Resolve (Tree.Condition.all);
+            Resolve (Tree.If_True.all);
+            if Tree.If_False /= null then
+               Resolve (Tree.If_False.all);
+            end if;
          when WACC.AST.N_Null =>
             null;
       end case;

@@ -196,6 +196,9 @@ package body WACC.TACKY is
                declare
                   False_Label : constant Identifier := Make_Identifier ("if_false.");
                   End_Label   : constant Identifier := Make_Identifier ("end_if.");
+                  Dest : constant Any_Val_Node := new Val_Node'
+                     (Typ  => TA_Var,
+                      Name => Make_Identifier ("condition_result."));
                   Condition_Result, Exp_Result : Any_Val_Node;
                begin
                   Condition_Result := Generate (Tree.Condition.all, Node);
@@ -205,6 +208,10 @@ package body WACC.TACKY is
                       JZ_Target    => False_Label));
                   Exp_Result := Generate (Tree.If_True.all, Node);
                   Append (Node, new Instruction_Node'
+                     (Typ      => TA_Copy,
+                      Copy_Src => Exp_Result,
+                      Copy_Dst => Dest));
+                  Append (Node, new Instruction_Node'
                      (Typ          => TA_Jump,
                       J_Target     => End_Label));
                   Append (Node, new Instruction_Node'
@@ -212,9 +219,13 @@ package body WACC.TACKY is
                       Label        => False_Label));
                   Exp_Result := Generate (Tree.If_False.all, Node);
                   Append (Node, new Instruction_Node'
+                     (Typ      => TA_Copy,
+                      Copy_Src => Exp_Result,
+                      Copy_Dst => Dest));
+                  Append (Node, new Instruction_Node'
                      (Typ          => TA_Label,
                       Label        => End_Label));
-                  return Exp_Result;
+                  return Dest;
                end;
          end case;
       end Generate;

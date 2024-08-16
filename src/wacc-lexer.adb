@@ -58,6 +58,10 @@ package body WACC.Lexer is
             T.Typ := T_int;
          elsif T.Literal = "return" then
             T.Typ := T_return;
+         elsif T.Literal = "if" then
+            T.Typ := T_if;
+         elsif T.Literal = "else" then
+            T.Typ := T_else;
          end if;
 
          Token_Vectors.Append (Tokens, T);
@@ -131,6 +135,10 @@ package body WACC.Lexer is
             Add_Single (T_Open_Brace);
          elsif Ch = '}' then
             Add_Single (T_Close_Brace);
+         elsif Ch = '?' then
+            Add_Single (T_Question);
+         elsif Ch = ':' then
+            Add_Single (T_Colon);
          elsif Ch = ';' then
             Add_Single (T_Semicolon);
          else

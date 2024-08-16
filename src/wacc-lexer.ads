@@ -13,6 +13,8 @@ is
        T_int,
        T_void,
        T_return,
+       T_if,
+       T_else,
        T_Open_Paren,
        T_Close_Paren,
        T_Open_Brace,
@@ -21,6 +23,9 @@ is
        T_Dash_Dash,
        T_Tilde,
        T_Bang,
+       T_Question,
+       T_Colon,
+
        T_Dash,
        T_Plus,
        T_Asterisk,

@@ -155,6 +155,8 @@ begin
       Object_File : constant String := Basename & ".o";
       Executable_File : constant String := Basename;
    begin
+      Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, "    WACC " & Basename & ".c");
+
       Preprocess (Input_File, Preprocessed_File);
 
       Compile (Preprocessed_File, Assembly_File, Stage);
@@ -173,8 +175,6 @@ begin
             Ada.Directories.Delete_File (Object_File);
          end if;
       end if;
-
-      Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, "    WACC " & Basename & ".c");
    exception
       when E : WACC.Lexer.Lex_Error | WACC.Parser.Parse_Error | WACC.Assembly.Assembly_Error =>
          if not Keep_Files then

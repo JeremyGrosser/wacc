@@ -176,7 +176,10 @@ begin
          end if;
       end if;
    exception
-      when E : WACC.Lexer.Lex_Error | WACC.Parser.Parse_Error | WACC.Assembly.Assembly_Error =>
+      when E : WACC.Lexer.Lex_Error
+             | WACC.Parser.Parse_Error
+             | WACC.Assembly.Assembly_Error
+             | WACC.Semantic_Analysis.Semantic_Error =>
          if not Keep_Files then
             Delete_If_Exists (Preprocessed_File);
             Delete_If_Exists (Assembly_File);

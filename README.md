@@ -182,3 +182,13 @@ I refactored most of the `Unbounded_String` operations on `Identifier`s into a
 single `WACC.Strings` package just to avoid duplicating the `Make_Identifier`
 logic in both the `Semantic_Analysis` and `TACKY` packages. I expect the
 `Strings` package to grow more functionality over time.
+
+## Chapter 6: if Statements and Conditional Expressions
+I never liked ternary operators in C. The list of examples for precedence rules
+and undefined behavior in this chapter really drive home how dangerous they
+are. Still, it's part of the langauge, so we must. I liked how the later stages
+of the compiler didn't need updating here. We already have conditional jump
+instructions, so adding if statements is really just a frontend concern.
+
+I'm a bit surprised that compound statements get their own chapter, but I'm
+sure I'll understand soon.

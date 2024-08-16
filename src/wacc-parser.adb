@@ -12,9 +12,14 @@ package body WACC.Parser is
       use WACC.Lexer.Token_Vectors;
       Input : WACC.Lexer.Token_List := Tokens;
 
+      function Error_Token
+         (Message : String)
+         return WACC.Lexer.Token
+      is (WACC.Lexer.Token'(WACC.Lexer.T_Error, Ada.Strings.Unbounded.To_Unbounded_String (Message)));
+
       function Next_Token
          return WACC.Lexer.Token
-      is (First_Element (Input));
+      is (if not Is_Empty (Input) then First_Element (Input) else Error_Token ("No more tokens in input"));
 
       function Peek_Token
          return WACC.Lexer.Token
@@ -28,7 +33,7 @@ package body WACC.Parser is
             Delete_First (Input);
          else
             raise Parse_Error with "Expected token " & Typ'Image & ", found " &
-                                   First_Element (Input).Typ'Image & " instead";
+                                   WACC.Lexer.Image (Next_Token) & " instead";
          end if;
       end Expect;
 
@@ -44,7 +49,8 @@ package body WACC.Parser is
             when WACC.Lexer.T_Bang =>
                Node := new WACC.AST.Unary_Operator_Node'(Typ => WACC.AST.N_Not);
             when others =>
-               raise Parse_Error with "Expected Dash or Tilde token in unary operator, got " & Next_Token.Typ'Image;
+               raise Parse_Error with "Expected Dash or Tilde token in unary operator, got " &
+                  WACC.Lexer.Image (Next_Token);
          end case;
          Delete_First (Input);
       end Parse_Unop;
@@ -96,7 +102,7 @@ package body WACC.Parser is
             when WACC.Lexer.T_Greater_Equal =>
                Node := new WACC.AST.Binary_Operator_Node'(Typ => WACC.AST.N_Greater_Or_Equal);
             when others =>
-               raise Parse_Error with "Unexpected token in binop: " & Next_Token.Typ'Image;
+               raise Parse_Error with "Unexpected token in binop: " & WACC.Lexer.Image (Next_Token);
          end case;
          Delete_First (Input);
       end Parse_Binop;
@@ -214,7 +220,7 @@ package body WACC.Parser is
                Parse_Exp (Node);
                Expect (WACC.Lexer.T_Close_Paren);
             when others =>
-               raise Parse_Error with "Unexpected token in factor: " & Next_Token.Typ'Image;
+               raise Parse_Error with "Unexpected token in factor: " & WACC.Lexer.Image (Next_Token);
          end case;
       end Parse_Factor;
 
@@ -282,7 +288,8 @@ package body WACC.Parser is
             Node := new WACC.AST.Declaration_Node'(Name => Next_Token.Literal, Init => null);
             Delete_First (Input);
          else
-            raise Parse_Error with "Expected identifier after ""int"" in declaration, got " & Next_Token.Typ'Image;
+            raise Parse_Error with "Expected identifier after ""int"" in declaration, got " &
+               WACC.Lexer.Image (Next_Token);
          end if;
 
          if Next_Token.Typ = WACC.Lexer.T_Equal then
@@ -336,7 +343,7 @@ package body WACC.Parser is
             Node.Name := Next_Token.Literal;
             Delete_First (Input);
          else
-            raise Parse_Error with "Expected identifier after ""int""";
+            raise Parse_Error with "Expected identifier after ""int"": " & WACC.Lexer.Image (Next_Token);
          end if;
          Expect (WACC.Lexer.T_Open_Paren);
          Expect (WACC.Lexer.T_void);
@@ -346,7 +353,7 @@ package body WACC.Parser is
    begin
       Parse_Function (Tree.Function_Definition);
       if not Is_Empty (Input) then
-         raise Parse_Error with "Unexpected tokens after function definition";
+         raise Parse_Error with "Unexpected token after function definition: " & WACC.Lexer.Image (Next_Token);
       end if;
    end Parse_Program;
 

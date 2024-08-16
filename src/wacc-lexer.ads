@@ -40,7 +40,12 @@ is
        T_Greater_Than,
        T_Less_Equal,
        T_Greater_Equal,
-       T_Equal);
+       T_Equal,
+
+       T_Error);
+   --  T_Error is not a real token. It's used to indicate a lex/parse error
+   --  before we can raise an exception. Literal contains a descriptive error
+   --  message.
 
    subtype Binary_Operator_Token_Type is Token_Type range T_Dash .. T_Equal;
 
@@ -55,5 +60,9 @@ is
    procedure Lex
       (Input_File : String;
        Tokens     : out Token_List);
+
+   function Image
+      (T : Token)
+      return String;
 
 end WACC.Lexer;

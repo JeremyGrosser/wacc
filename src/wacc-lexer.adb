@@ -150,4 +150,16 @@ package body WACC.Lexer is
       IO.Close (File);
    end Lex;
 
+   function Image
+      (T : Token)
+      return String
+   is
+   begin
+      if Length (T.Literal) > 0 then
+         return T.Typ'Image & " """ & To_String (T.Literal) & """";
+      else
+         return T.Typ'Image;
+      end if;
+   end Image;
+
 end WACC.Lexer;

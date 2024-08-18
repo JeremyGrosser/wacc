@@ -258,6 +258,42 @@ package body WACC.Parser is
                    Label => Next_Token.Literal);
                Delete_First (Input);
                Expect (WACC.Lexer.T_Semicolon);
+            when WACC.Lexer.T_break =>
+               Delete_First (Input);
+               Node := new WACC.AST.Statement_Node'
+                  (Typ   => WACC.AST.N_Break,
+                   Label => Ada.Strings.Unbounded.Null_Unbounded_String);
+               Expect (WACC.Lexer.T_Semicolon);
+            when WACC.Lexer.T_continue =>
+               Delete_First (Input);
+               Node := new WACC.AST.Statement_Node'
+                  (Typ   => WACC.AST.N_Continue,
+                   Label => Ada.Strings.Unbounded.Null_Unbounded_String);
+               Expect (WACC.Lexer.T_Semicolon);
+            when WACC.Lexer.T_while =>
+               Delete_First (Input);
+               Expect (WACC.Lexer.T_Open_Paren);
+               Node := new WACC.AST.Statement_Node'
+                  (Typ => WACC.AST.N_While,
+                   While_Condition => null,
+                   While_Body => null);
+               Parse_Exp (Node.While_Condition);
+               Expect (WACC.Lexer.T_Close_Paren);
+               Parse_Statement (Node.While_Body);
+            when WACC.Lexer.T_do =>
+               Delete_First (Input);
+               Node := new WACC.AST.Statement_Node'
+                  (Typ => WACC.AST.N_DoWhile,
+                   While_Condition => null,
+                   While_Body => null);
+               Parse_Statement (Node.While_Body);
+               Expect (WACC.Lexer.T_while);
+               Expect (WACC.Lexer.T_Open_Paren);
+               Parse_Exp (Node.While_Condition);
+               Expect (WACC.Lexer.T_Close_Paren);
+               Expect (WACC.Lexer.T_Semicolon);
+            when WACC.Lexer.T_for =>
+               raise Program_Error with "TODO";
             when WACC.Lexer.T_Open_Brace =>
                Node := new WACC.AST.Statement_Node'(Typ => WACC.AST.N_Compound, Block => null);
                Parse_Block (Node.Block);

@@ -194,6 +194,11 @@ I'm a bit surprised that compound statements get their own chapter, but I'm
 sure I'll understand soon.
 
 ## Chapter 7: Compound Statements
-Oh. Scoping rules. That's why. I like the variable renaming approach here.
-Seems simpler than what Crafting Interpreters does with a nested tree of scopes
-you have to traverse.
+Oh. Scoping rules. That's why. I like the variable renaming and map copy
+approach here. Seems simpler than what Crafting Interpreters does with a
+nested tree of scopes you have to traverse to resolve.
+
+I did a bit of refactoring in the semantic analysis pass here to more closely
+match the function names in the book's pseudocode. Every time I try to be more
+clever than the book, I have trouble remembering why I did it a few days later.
+There's a lesson there, certainly.

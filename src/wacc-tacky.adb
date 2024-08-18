@@ -280,6 +280,8 @@ package body WACC.TACKY is
                end;
             when WACC.AST.N_Compound =>
                Generate (Tree.Block.all, Node);
+            when WACC.AST.N_Break | WACC.AST.N_Continue | WACC.AST.N_While | WACC.AST.N_DoWhile | WACC.AST.N_For =>
+               raise Program_Error with "TODO";
             when WACC.AST.N_Goto =>
                Append (Node, new Instruction_Node'
                   (Typ      => TA_Jump,

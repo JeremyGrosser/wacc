@@ -128,6 +128,8 @@ package body WACC.Semantic_Analysis is
                Copy_Variable_Map (Vars, New_Variable_Map);
                Resolve_Block (Tree.Block.all, New_Variable_Map);
             end;
+         when WACC.AST.N_Break | WACC.AST.N_Continue | WACC.AST.N_While | WACC.AST.N_DoWhile | WACC.AST.N_For =>
+            raise Program_Error with "TODO";
          when WACC.AST.N_Goto | WACC.AST.N_Label | WACC.AST.N_Null =>
             null;
       end case;

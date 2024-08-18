@@ -99,7 +99,34 @@ package body WACC.AST is
       end Print;
 
       procedure Print
+         (This : Declaration_Node);
+
+      procedure Print
+         (This : For_Init_Node)
+      is
+      begin
+         Log ("For_Init");
+         Indent;
+         Log (This.Typ'Image);
+         Indent;
+         case This.Typ is
+            when N_Init_Declaration =>
+               Print (This.Decl.all);
+            when N_Init_Expression =>
+               if This.Exp /= null then
+                  Print (This.Exp.all);
+               else
+                  Log ("(null)");
+               end if;
+         end case;
+         Dedent;
+      end Print;
+
+      procedure Print
          (This : Block_Node);
+
+      procedure Print
+         (This : Statement_Node);
 
       procedure Print
          (This : Statement_Node)
@@ -132,7 +159,39 @@ package body WACC.AST is
                end if;
             when N_Compound =>
                Print (This.Block.all);
-            when N_Goto | N_Label =>
+            when N_While | N_DoWhile =>
+               Log ("Condition");
+               Indent;
+               Print (This.While_Condition.all);
+               Dedent;
+               Log ("Body");
+               Indent;
+               Print (This.While_Body.all);
+               Dedent;
+            when N_For =>
+               Log ("Init");
+               Indent;
+               Print (This.For_Init.all);
+               Dedent;
+               if This.For_Condition /= null then
+                  Log ("Condition");
+                  Indent;
+                  Print (This.For_Condition.all);
+                  Dedent;
+               end if;
+
+               if This.For_Post /= null then
+                  Log ("Post");
+                  Indent;
+                  Print (This.For_Post.all);
+                  Dedent;
+               end if;
+
+               Log ("Body");
+               Indent;
+               Print (This.For_Body.all);
+               Dedent;
+            when N_Break | N_Continue | N_Goto | N_Label =>
                Print (This.Label);
             when N_Null =>
                null;

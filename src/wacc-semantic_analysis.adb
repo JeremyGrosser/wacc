@@ -191,7 +191,6 @@ package body WACC.Semantic_Analysis is
       use type WACC.AST.Any_Block_Item_Node;
       Node : WACC.AST.Any_Block_Item_Node := Tree.Head;
    begin
-      Clear (Labels);
       while Node /= null loop
          Resolve_Block_Item (Node.all, Vars);
          Node := Node.Next;
@@ -203,6 +202,7 @@ package body WACC.Semantic_Analysis is
    is
       Vars : Variable_Map := Identifier_Entry_Maps.Empty_Map;
    begin
+      Clear (Labels);
       Resolve_Block (Tree.FBody.all, Vars);
    end Analyze;
 

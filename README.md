@@ -192,3 +192,8 @@ instructions, so adding if statements is really just a frontend concern.
 
 I'm a bit surprised that compound statements get their own chapter, but I'm
 sure I'll understand soon.
+
+## Chapter 7: Compound Statements
+Oh. Scoping rules. That's why. I like the variable renaming approach here.
+Seems simpler than what Crafting Interpreters does with a nested tree of scopes
+you have to traverse.

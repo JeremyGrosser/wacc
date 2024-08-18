@@ -4,18 +4,36 @@ with Ada.Containers.Hashed_Maps;
 with Ada.Containers.Hashed_Sets;
 
 package body WACC.Semantic_Analysis is
-   --  There are two sets of procedures here, Resolve_Variables and Analyze.
-   --  Analyze is the top level tree walk. When it descends into a Statement or
-   --  Declaration it calls Resolve_Variables. Resolve_Variables procedures do variable renaming.
-   --  Analyze will be extended in the future to call more analysis passes.
 
-   package Identifier_Maps is new Ada.Containers.Hashed_Maps
+   type Map_Entry is record
+      New_Name             : Identifier;
+      From_Current_Block   : Boolean;
+   end record;
+
+   package Identifier_Entry_Maps is new Ada.Containers.Hashed_Maps
       (Key_Type         => Identifier,
-       Element_Type     => Identifier,
+       Element_Type     => Map_Entry,
        Hash             => WACC.Strings.Hash,
        Equivalent_Keys  => WACC.Strings."=");
-   use Identifier_Maps;
-   Vars : Identifier_Maps.Map;
+   use Identifier_Entry_Maps;
+
+   subtype Variable_Map is Identifier_Entry_Maps.Map;
+
+   --  Copy a map, setting From_Current_Block := False; for all elements.
+   procedure Copy_Variable_Map
+      (From : Variable_Map;
+       To   : out Variable_Map)
+   is
+   begin
+      for Cursor in Iterate (From) loop
+         declare
+            Item : Map_Entry := Element (Cursor);
+         begin
+            Item.From_Current_Block := False;
+            Include (To, Key (Cursor), Item);
+         end;
+      end loop;
+   end Copy_Variable_Map;
 
    package Identifier_Sets is new Ada.Containers.Hashed_Sets
       (Element_Type        => Identifier,
@@ -24,14 +42,13 @@ package body WACC.Semantic_Analysis is
    use Identifier_Sets;
    Labels : Identifier_Sets.Set;
 
-   procedure Reset_Context is
-   begin
-      Clear (Vars);
-      Clear (Labels);
-   end Reset_Context;
+   procedure Resolve_Block
+      (Tree : in out WACC.AST.Block_Node;
+       Vars : in out Variable_Map);
 
-   procedure Resolve_Variables
-      (Exp : in out WACC.AST.Exp_Node)
+   procedure Resolve_Expression
+      (Exp  : in out WACC.AST.Exp_Node;
+       Vars : Variable_Map)
    is
       use type WACC.AST.Exp_Type;
    begin
@@ -40,35 +57,36 @@ package body WACC.Semantic_Analysis is
             null;
          when WACC.AST.N_Var =>
             if Contains (Vars, Exp.Name) then
-               Exp.Name := Element (Vars, Exp.Name);
+               Exp.Name := Element (Vars, Exp.Name).New_Name;
             else
                raise Semantic_Error with "Undeclared variable in initializer: " & To_String (Exp.Name);
             end if;
          when WACC.AST.N_Unary =>
-            Resolve_Variables (Exp.Exp.all);
+            Resolve_Expression (Exp.Exp.all, Vars);
          when WACC.AST.N_Binary =>
-            Resolve_Variables (Exp.Left.all);
-            Resolve_Variables (Exp.Right.all);
+            Resolve_Expression (Exp.Left.all, Vars);
+            Resolve_Expression (Exp.Right.all, Vars);
          when WACC.AST.N_Assignment =>
             if Exp.Assign_Left.Typ /= WACC.AST.N_Var then
                raise Semantic_Error with "Invalid lvalue!";
             else
-               Resolve_Variables (Exp.Assign_Left.all);
-               Resolve_Variables (Exp.Assign_Right.all);
+               Resolve_Expression (Exp.Assign_Left.all, Vars);
+               Resolve_Expression (Exp.Assign_Right.all, Vars);
             end if;
          when WACC.AST.N_Conditional =>
-            Resolve_Variables (Exp.Condition.all);
-            Resolve_Variables (Exp.If_True.all);
-            Resolve_Variables (Exp.If_False.all);
+            Resolve_Expression (Exp.Condition.all, Vars);
+            Resolve_Expression (Exp.If_True.all, Vars);
+            Resolve_Expression (Exp.If_False.all, Vars);
       end case;
-   end Resolve_Variables;
+   end Resolve_Expression;
 
-   procedure Resolve_Variables
-      (Decl : in out WACC.AST.Declaration_Node)
+   procedure Resolve_Declaration
+      (Decl : in out WACC.AST.Declaration_Node;
+       Vars : in out Variable_Map)
    is
    begin
-      if Contains (Vars, Decl.Name) then
-         raise Semantic_Error with "Variable " & To_String (Decl.Name) & " has already been declared!";
+      if Contains (Vars, Decl.Name) and then Element (Vars, Decl.Name).From_Current_Block then
+         raise Semantic_Error with "Duplicate variable """ & To_String (Decl.Name) & """ has already been declared!";
       end if;
 
       declare
@@ -77,35 +95,43 @@ package body WACC.Semantic_Analysis is
          Unique : constant Identifier := Make_Identifier
             (Prefix => To_String (Decl.Name) & ".");
       begin
-         Include (Vars, Decl.Name, Unique);
+         Include (Vars, Decl.Name, Map_Entry'
+            (New_Name           => Unique,
+             From_Current_Block => True));
          if Decl.Init /= null then
-            Resolve_Variables (Decl.Init.all);
+            Resolve_Expression (Decl.Init.all, Vars);
          end if;
 
          Decl.Name := Unique;
       end;
-   end Resolve_Variables;
+   end Resolve_Declaration;
 
-   procedure Resolve_Variables
-      (Tree : in out WACC.AST.Statement_Node)
+   procedure Resolve_Statement
+      (Tree : in out WACC.AST.Statement_Node;
+       Vars : Variable_Map)
    is
       use type WACC.AST.Any_Statement_Node;
    begin
       case Tree.Typ is
          when WACC.AST.N_Return | WACC.AST.N_Expression =>
-            Resolve_Variables (Tree.Exp.all);
+            Resolve_Expression (Tree.Exp.all, Vars);
          when WACC.AST.N_If =>
-            Resolve_Variables (Tree.Condition.all);
-            Resolve_Variables (Tree.If_True.all);
+            Resolve_Expression (Tree.Condition.all, Vars);
+            Resolve_Statement (Tree.If_True.all, Vars);
             if Tree.If_False /= null then
-               Resolve_Variables (Tree.If_False.all);
+               Resolve_Statement (Tree.If_False.all, Vars);
             end if;
          when WACC.AST.N_Compound =>
-            raise Program_Error with "TODO";
+            declare
+               New_Variable_Map : Variable_Map := Empty_Map;
+            begin
+               Copy_Variable_Map (Vars, New_Variable_Map);
+               Resolve_Block (Tree.Block.all, New_Variable_Map);
+            end;
          when WACC.AST.N_Goto | WACC.AST.N_Label | WACC.AST.N_Null =>
             null;
       end case;
-   end Resolve_Variables;
+   end Resolve_Statement;
 
    procedure Resolve_Labels
       (Tree : in out WACC.AST.Statement_Node;
@@ -144,52 +170,40 @@ package body WACC.Semantic_Analysis is
       end case;
    end Resolve_Labels;
 
-   procedure Analyze
-      (Tree : in out WACC.AST.Statement_Node;
-       Next : WACC.AST.Any_Block_Item_Node)
-   is
-   begin
-      Resolve_Variables (Tree);
-      Resolve_Labels (Tree, Next);
-   end Analyze;
-
-   procedure Analyze
-      (Tree : in out WACC.AST.Declaration_Node)
-   is
-   begin
-      Resolve_Variables (Tree);
-   end Analyze;
-
-   procedure Analyze
-      (Tree : in out WACC.AST.Block_Item_Node)
+   procedure Resolve_Block_Item
+      (Tree : in out WACC.AST.Block_Item_Node;
+       Vars : in out Variable_Map)
    is
    begin
       case Tree.Typ is
          when WACC.AST.N_Statement =>
-            Analyze (Tree.Stmt.all, Next => Tree.Next);
+            Resolve_Statement (Tree.Stmt.all, Vars);
+            Resolve_Labels (Tree.Stmt.all, Tree.Next);
          when WACC.AST.N_Declaration =>
-            Analyze (Tree.Decl.all);
+            Resolve_Declaration (Tree.Decl.all, Vars);
       end case;
-   end Analyze;
+   end Resolve_Block_Item;
 
-   procedure Analyze
-      (Tree : in out WACC.AST.Block_Node)
+   procedure Resolve_Block
+      (Tree : in out WACC.AST.Block_Node;
+       Vars : in out Variable_Map)
    is
       use type WACC.AST.Any_Block_Item_Node;
       Node : WACC.AST.Any_Block_Item_Node := Tree.Head;
    begin
-      Reset_Context;
+      Clear (Labels);
       while Node /= null loop
-         Analyze (Node.all);
+         Resolve_Block_Item (Node.all, Vars);
          Node := Node.Next;
       end loop;
-   end Analyze;
+   end Resolve_Block;
 
    procedure Analyze
       (Tree : in out WACC.AST.Function_Definition_Node)
    is
+      Vars : Variable_Map := Identifier_Entry_Maps.Empty_Map;
    begin
-      Analyze (Tree.FBody.all);
+      Resolve_Block (Tree.FBody.all, Vars);
    end Analyze;
 
    procedure Analyze

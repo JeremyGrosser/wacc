@@ -182,7 +182,11 @@ package body WACC.AST is
       begin
          Log ("Block");
          Indent;
-         Print (This.Head.all);
+         if This.Head /= null then
+            Print (This.Head.all);
+         else
+            Log ("(null)");
+         end if;
          Dedent;
       end Print;
 

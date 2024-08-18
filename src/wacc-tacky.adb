@@ -231,6 +231,10 @@ package body WACC.TACKY is
       end Generate;
 
       procedure Generate
+         (Tree : WACC.AST.Block_Node;
+          Node : in out WACC.TACKY.Instruction_Node_Vectors.Vector);
+
+      procedure Generate
          (Tree : WACC.AST.Statement_Node;
           Node : in out WACC.TACKY.Instruction_Node_Vectors.Vector)
       is
@@ -275,7 +279,7 @@ package body WACC.TACKY is
                       Label        => End_Label));
                end;
             when WACC.AST.N_Compound =>
-               raise Program_Error with "TODO";
+               Generate (Tree.Block.all, Node);
             when WACC.AST.N_Goto =>
                Append (Node, new Instruction_Node'
                   (Typ      => TA_Jump,
@@ -317,18 +321,26 @@ package body WACC.TACKY is
       end Generate;
 
       procedure Generate
-         (Tree : WACC.AST.Function_Definition_Node;
-          Node : out WACC.TACKY.Function_Definition_Node)
+         (Tree : WACC.AST.Block_Node;
+          Node : in out WACC.TACKY.Instruction_Node_Vectors.Vector)
       is
          use type WACC.AST.Any_Block_Item_Node;
          Item : WACC.AST.Any_Block_Item_Node;
       begin
-         Node.Name := Tree.Name;
-         Item := Tree.FBody.Head; --  TODO Generate Block_Node
+         Item := Tree.Head;
          while Item /= null loop
-            Generate (Item.all, Node.FBody);
+            Generate (Item.all, Node);
             Item := Item.Next;
          end loop;
+      end Generate;
+
+      procedure Generate
+         (Tree : WACC.AST.Function_Definition_Node;
+          Node : out WACC.TACKY.Function_Definition_Node)
+      is
+      begin
+         Node.Name := Tree.Name;
+         Generate (Tree.FBody.all, Node.FBody);
          Instruction_Node_Vectors.Append (Node.FBody, new Instruction_Node'
             (Typ => TA_Return,
              Val => new Val_Node'

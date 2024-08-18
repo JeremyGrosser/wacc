@@ -64,6 +64,16 @@ package body WACC.Lexer is
             T.Typ := T_else;
          elsif T.Literal = "goto" then
             T.Typ := T_goto;
+         elsif T.Literal = "do" then
+            T.Typ := T_do;
+         elsif T.Literal = "while" then
+            T.Typ := T_while;
+         elsif T.Literal = "for" then
+            T.Typ := T_for;
+         elsif T.Literal = "break" then
+            T.Typ := T_break;
+         elsif T.Literal = "continue" then
+            T.Typ := T_continue;
          end if;
 
          Token_Vectors.Append (Tokens, T);

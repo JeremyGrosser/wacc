@@ -230,6 +230,17 @@ package body WACC.Parser is
       procedure Parse_Statement
          (Node : out WACC.AST.Any_Statement_Node);
 
+      procedure Parse_Optional_Exp
+         (Node : out WACC.AST.Any_Exp_Node;
+          Stop : WACC.Lexer.Token_Type)
+      is
+      begin
+         if Next_Token.Typ /= Stop then
+            Parse_Exp (Node);
+         end if;
+         Expect (Stop);
+      end Parse_Optional_Exp;
+
       procedure Parse_For_Init
          (Node : out WACC.AST.Any_For_Init_Node)
       is
@@ -243,10 +254,7 @@ package body WACC.Parser is
             Node := new WACC.AST.For_Init_Node'
                (Typ => WACC.AST.N_Init_Expression,
                 Exp => null);
-            if Next_Token.Typ /= WACC.Lexer.T_Semicolon then
-               Parse_Exp (Node.Exp);
-            end if;
-            Expect (WACC.Lexer.T_Semicolon);
+            Parse_Optional_Exp (Node.Exp, WACC.Lexer.T_Semicolon);
          end if;
       end Parse_For_Init;
 
@@ -265,17 +273,8 @@ package body WACC.Parser is
              For_Body      => null);
 
          Parse_For_Init (Node.For_Init);
-
-         if Next_Token.Typ /= WACC.Lexer.T_Semicolon then
-            Parse_Exp (Node.For_Condition);
-         end if;
-         Expect (WACC.Lexer.T_Semicolon);
-
-         if Next_Token.Typ /= WACC.Lexer.T_Close_Paren then
-            Parse_Exp (Node.For_Post);
-         end if;
-         Expect (WACC.Lexer.T_Close_Paren);
-
+         Parse_Optional_Exp (Node.For_Condition, WACC.Lexer.T_Semicolon);
+         Parse_Optional_Exp (Node.For_Post, WACC.Lexer.T_Close_Paren);
          Parse_Statement (Node.For_Body);
       end Parse_For;
 

@@ -106,6 +106,30 @@ package body WACC.Semantic_Analysis is
       end;
    end Resolve_Declaration;
 
+   procedure Resolve_Optional_Exp
+      (Tree : WACC.AST.Any_Exp_Node;
+       Vars : Variable_Map)
+   is
+      use type WACC.AST.Any_Exp_Node;
+   begin
+      if Tree /= null then
+         Resolve_Expression (Tree.all, Vars);
+      end if;
+   end Resolve_Optional_Exp;
+
+   procedure Resolve_For_Init
+      (Tree : in out WACC.AST.For_Init_Node;
+       Vars : in out Variable_Map)
+   is
+   begin
+      case Tree.Typ is
+         when WACC.AST.N_Init_Expression =>
+            Resolve_Optional_Exp (Tree.Exp, Vars);
+         when WACC.AST.N_Init_Declaration =>
+            Resolve_Declaration (Tree.Decl.all, Vars);
+      end case;
+   end Resolve_For_Init;
+
    procedure Resolve_Statement
       (Tree : in out WACC.AST.Statement_Node;
        Vars : Variable_Map)
@@ -128,9 +152,21 @@ package body WACC.Semantic_Analysis is
                Copy_Variable_Map (Vars, New_Variable_Map);
                Resolve_Block (Tree.Block.all, New_Variable_Map);
             end;
-         when WACC.AST.N_Break | WACC.AST.N_Continue | WACC.AST.N_While | WACC.AST.N_DoWhile | WACC.AST.N_For =>
-            raise Program_Error with "TODO";
-         when WACC.AST.N_Goto | WACC.AST.N_Label | WACC.AST.N_Null =>
+         when WACC.AST.N_For =>
+            declare
+               New_Variable_Map : Variable_Map := Empty_Map;
+            begin
+               Copy_Variable_Map (Vars, New_Variable_Map);
+               Resolve_For_Init (Tree.For_Init.all, New_Variable_Map);
+               Resolve_Optional_Exp (Tree.For_Condition, New_Variable_Map);
+               Resolve_Optional_Exp (Tree.For_Post, New_Variable_Map);
+               Resolve_Statement (Tree.For_Body.all, New_Variable_Map);
+            end;
+         when WACC.AST.N_While | WACC.AST.N_DoWhile =>
+            Resolve_Expression (Tree.While_Condition.all, Vars);
+            Resolve_Statement (Tree.While_Body.all, Vars);
+         when WACC.AST.N_Goto | WACC.AST.N_Label | WACC.AST.N_Null | WACC.AST.N_Break
+            | WACC.AST.N_Continue =>
             null;
       end case;
    end Resolve_Statement;
@@ -199,13 +235,88 @@ package body WACC.Semantic_Analysis is
       end loop;
    end Resolve_Block;
 
+   procedure Label_Block
+      (Tree  : in out WACC.AST.Block_Node;
+       Label : in out Identifier);
+
+   procedure Label_Statement
+      (Tree  : in out WACC.AST.Statement_Node;
+       Label : in out Identifier)
+   is
+      use type WACC.AST.Any_Statement_Node;
+   begin
+      case Tree.Typ is
+         when WACC.AST.N_Break =>
+            if Label = Null_Identifier then
+               raise Semantic_Error with "break statement outside of loop";
+            else
+               Tree.Label := Label;
+            end if;
+         when WACC.AST.N_Continue =>
+            if Label = Null_Identifier then
+               raise Semantic_Error with "continue statement outside of loop";
+            else
+               Tree.Label := Label;
+            end if;
+         when WACC.AST.N_While | WACC.AST.N_DoWhile =>
+            Label := Make_Identifier ("loop");
+            Label_Statement (Tree.While_Body.all, Label);
+            Tree.While_Label := Label;
+         when WACC.AST.N_For =>
+            Label := Make_Identifier ("loop");
+            Label_Statement (Tree.For_Body.all, Label);
+            Tree.For_Label := Label;
+         when WACC.AST.N_If =>
+            Label_Statement (Tree.If_True.all, Label);
+            if Tree.If_False /= null then
+               Label_Statement (Tree.If_False.all, Label);
+            end if;
+         when WACC.AST.N_Compound =>
+            Label_Block (Tree.Block.all, Label);
+         when WACC.AST.N_Goto | WACC.AST.N_Label =>
+            --  Should Resolve_Labels be moved here?
+            null;
+         when WACC.AST.N_Return | WACC.AST.N_Expression | WACC.AST.N_Null =>
+            null;
+      end case;
+   end Label_Statement;
+
+   procedure Label_Block_Item
+      (Tree  : in out WACC.AST.Block_Item_Node;
+       Label : in out Identifier)
+   is
+      use type WACC.AST.Block_Item_Type;
+   begin
+      case Tree.Typ is
+         when WACC.AST.N_Statement =>
+            Label_Statement (Tree.Stmt.all, Label);
+         when WACC.AST.N_Declaration =>
+            null;
+      end case;
+   end Label_Block_Item;
+
+   procedure Label_Block
+      (Tree  : in out WACC.AST.Block_Node;
+       Label : in out Identifier)
+   is
+      use type WACC.AST.Any_Block_Item_Node;
+      Node : WACC.AST.Any_Block_Item_Node := Tree.Head;
+   begin
+      while Node /= null loop
+         Label_Block_Item (Node.all, Label);
+         Node := Node.Next;
+      end loop;
+   end Label_Block;
+
    procedure Analyze
       (Tree : in out WACC.AST.Function_Definition_Node)
    is
       Vars : Variable_Map := Identifier_Entry_Maps.Empty_Map;
+      Label : Identifier := Null_Identifier;
    begin
       Clear (Labels);
       Resolve_Block (Tree.FBody.all, Vars);
+      Label_Block (Tree.FBody.all, Label);
    end Analyze;
 
    procedure Analyze

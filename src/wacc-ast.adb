@@ -160,6 +160,10 @@ package body WACC.AST is
             when N_Compound =>
                Print (This.Block.all);
             when N_While | N_DoWhile =>
+               Log ("Label");
+               Indent;
+               Print (This.While_Label);
+               Dedent;
                Log ("Condition");
                Indent;
                Print (This.While_Condition.all);
@@ -169,6 +173,10 @@ package body WACC.AST is
                Print (This.While_Body.all);
                Dedent;
             when N_For =>
+               Log ("Label");
+               Indent;
+               Print (This.For_Label);
+               Dedent;
                Log ("Init");
                Indent;
                Print (This.For_Init.all);

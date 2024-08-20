@@ -1,6 +1,7 @@
 pragma Style_Checks ("M120");
 with Ada.Strings.Unbounded;
 with Ada.Containers;
+with WACC.Strings;
 
 package body WACC.Parser is
 
@@ -267,6 +268,7 @@ package body WACC.Parser is
 
          Node := new WACC.AST.Statement_Node'
             (Typ           => WACC.AST.N_For,
+             For_Label     => WACC.Strings.Null_Identifier,
              For_Init      => null,
              For_Condition => null,
              For_Post      => null,
@@ -329,6 +331,7 @@ package body WACC.Parser is
                Expect (WACC.Lexer.T_Open_Paren);
                Node := new WACC.AST.Statement_Node'
                   (Typ => WACC.AST.N_While,
+                   While_Label => WACC.Strings.Null_Identifier,
                    While_Condition => null,
                    While_Body => null);
                Parse_Exp (Node.While_Condition);
@@ -338,6 +341,7 @@ package body WACC.Parser is
                Delete_First (Input);
                Node := new WACC.AST.Statement_Node'
                   (Typ => WACC.AST.N_DoWhile,
+                   While_Label => WACC.Strings.Null_Identifier,
                    While_Condition => null,
                    While_Body => null);
                Parse_Statement (Node.While_Body);

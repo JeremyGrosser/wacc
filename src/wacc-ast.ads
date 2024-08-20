@@ -148,9 +148,11 @@ is
          when N_Compound =>
             Block : Any_Block_Node;
          when N_While | N_DoWhile =>
+            While_Label : Identifier;
             While_Condition : Any_Exp_Node;
             While_Body : Any_Statement_Node;
          when N_For =>
+            For_Label : Identifier;
             For_Init : Any_For_Init_Node;
             For_Condition : Any_Exp_Node;
             For_Post : Any_Exp_Node;

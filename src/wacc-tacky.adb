@@ -231,6 +231,31 @@ package body WACC.TACKY is
       end Generate;
 
       procedure Generate
+         (Tree : WACC.AST.Declaration_Node;
+          Node : in out WACC.TACKY.Instruction_Node_Vectors.Vector);
+
+      procedure Generate
+         (Tree : WACC.AST.For_Init_Node;
+          Node : in out WACC.TACKY.Instruction_Node_Vectors.Vector)
+      is
+         use type WACC.AST.Any_Exp_Node;
+      begin
+         case Tree.Typ is
+            when WACC.AST.N_Init_Expression =>
+               if Tree.Exp /= null then
+                  declare
+                     Result : Any_Val_Node
+                        with Unreferenced;
+                  begin
+                     Result := Generate (Tree.Exp.all, Node);
+                  end;
+               end if;
+            when WACC.AST.N_Init_Declaration =>
+               Generate (Tree.Decl.all, Node);
+         end case;
+      end Generate;
+
+      procedure Generate
          (Tree : WACC.AST.Block_Node;
           Node : in out WACC.TACKY.Instruction_Node_Vectors.Vector);
 
@@ -239,6 +264,7 @@ package body WACC.TACKY is
           Node : in out WACC.TACKY.Instruction_Node_Vectors.Vector)
       is
          use Instruction_Node_Vectors;
+         use type WACC.AST.Any_Exp_Node;
       begin
          case Tree.Typ is
             when WACC.AST.N_Return =>
@@ -280,8 +306,74 @@ package body WACC.TACKY is
                end;
             when WACC.AST.N_Compound =>
                Generate (Tree.Block.all, Node);
-            when WACC.AST.N_Break | WACC.AST.N_Continue | WACC.AST.N_While | WACC.AST.N_DoWhile | WACC.AST.N_For =>
-               raise Program_Error with "TODO";
+            when WACC.AST.N_Break =>
+               Append (Node, new Instruction_Node'
+                  (Typ      => TA_Jump,
+                   J_Target => "break_" & Tree.Label));
+            when WACC.AST.N_Continue =>
+               Append (Node, new Instruction_Node'
+                  (Typ      => TA_Jump,
+                   J_Target => "continue_" & Tree.Label));
+            when WACC.AST.N_DoWhile =>
+               Append (Node, new Instruction_Node'
+                  (Typ   => TA_Label,
+                   Label => Tree.While_Label));
+               Generate (Tree.While_Body.all, Node);
+               Append (Node, new Instruction_Node'
+                  (Typ   => TA_Label,
+                   Label => "continue_" & Tree.While_Label));
+               Append (Node, new Instruction_Node'
+                  (Typ           => TA_Jump_If_Not_Zero,
+                   JNZ_Condition => Generate (Tree.While_Condition.all, Node),
+                   JNZ_Target    => Tree.While_Label));
+               Append (Node, new Instruction_Node'
+                  (Typ   => TA_Label,
+                   Label => "break_" & Tree.While_Label));
+            when WACC.AST.N_While =>
+               Append (Node, new Instruction_Node'
+                  (Typ   => TA_Label,
+                   Label => "continue_" & Tree.While_Label));
+               Append (Node, new Instruction_Node'
+                  (Typ           => TA_Jump_If_Zero,
+                   JZ_Condition  => Generate (Tree.While_Condition.all, Node),
+                   JZ_Target     => "break_" & Tree.While_Label));
+               Generate (Tree.While_Body.all, Node);
+               Append (Node, new Instruction_Node'
+                  (Typ        => TA_Jump,
+                   J_Target   => "continue_" & Tree.While_Label));
+               Append (Node, new Instruction_Node'
+                  (Typ   => TA_Label,
+                   Label => "break_" & Tree.While_Label));
+            when WACC.AST.N_For =>
+               Generate (Tree.For_Init.all, Node);
+               Append (Node, new Instruction_Node'
+                  (Typ   => TA_Label,
+                   Label => "start_" & Tree.For_Label));
+               if Tree.For_Condition /= null then
+                  Append (Node, new Instruction_Node'
+                     (Typ           => TA_Jump_If_Zero,
+                      JZ_Condition  => Generate (Tree.For_Condition.all, Node),
+                      JZ_Target     => "break_" & Tree.For_Label));
+               end if;
+               Generate (Tree.For_Body.all, Node);
+               Append (Node, new Instruction_Node'
+                  (Typ   => TA_Label,
+                   Label => "continue_" & Tree.For_Label));
+
+               if Tree.For_Post /= null then
+                  declare
+                     Result : Any_Val_Node
+                        with Unreferenced;
+                  begin
+                     Result := Generate (Tree.For_Post.all, Node);
+                  end;
+               end if;
+               Append (Node, new Instruction_Node'
+                  (Typ => TA_Jump,
+                   J_Target => "start_" & Tree.For_Label));
+               Append (Node, new Instruction_Node'
+                  (Typ   => TA_Label,
+                   Label => "break_" & Tree.For_Label));
             when WACC.AST.N_Goto =>
                Append (Node, new Instruction_Node'
                   (Typ      => TA_Jump,

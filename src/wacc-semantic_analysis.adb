@@ -259,11 +259,11 @@ package body WACC.Semantic_Analysis is
                Tree.Label := Label;
             end if;
          when WACC.AST.N_While | WACC.AST.N_DoWhile =>
-            Label := Make_Identifier ("loop");
+            Label := Make_Identifier ("loop.");
             Label_Statement (Tree.While_Body.all, Label);
             Tree.While_Label := Label;
          when WACC.AST.N_For =>
-            Label := Make_Identifier ("loop");
+            Label := Make_Identifier ("loop.");
             Label_Statement (Tree.For_Body.all, Label);
             Tree.For_Label := Label;
          when WACC.AST.N_If =>

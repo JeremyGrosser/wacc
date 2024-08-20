@@ -28,4 +28,10 @@ package WACC.Strings is
       return Boolean
    renames Ada.Strings.Unbounded."=";
 
+   function "&"
+      (Left  : String;
+       Right : Identifier)
+      return Identifier
+   renames Ada.Strings.Unbounded."&";
+
 end WACC.Strings;

@@ -224,6 +224,61 @@ package body WACC.Parser is
          end case;
       end Parse_Factor;
 
+      procedure Parse_Declaration
+         (Node : out WACC.AST.Any_Declaration_Node);
+
+      procedure Parse_Statement
+         (Node : out WACC.AST.Any_Statement_Node);
+
+      procedure Parse_For_Init
+         (Node : out WACC.AST.Any_For_Init_Node)
+      is
+      begin
+         if Next_Token.Typ = WACC.Lexer.T_int then
+            Node := new WACC.AST.For_Init_Node'
+               (Typ  => WACC.AST.N_Init_Declaration,
+                Decl => null);
+            Parse_Declaration (Node.Decl);
+         else
+            Node := new WACC.AST.For_Init_Node'
+               (Typ => WACC.AST.N_Init_Expression,
+                Exp => null);
+            if Next_Token.Typ /= WACC.Lexer.T_Semicolon then
+               Parse_Exp (Node.Exp);
+            end if;
+            Expect (WACC.Lexer.T_Semicolon);
+         end if;
+      end Parse_For_Init;
+
+      procedure Parse_For
+         (Node : out WACC.AST.Any_Statement_Node)
+      is
+      begin
+         Expect (WACC.Lexer.T_for);
+         Expect (WACC.Lexer.T_Open_Paren);
+
+         Node := new WACC.AST.Statement_Node'
+            (Typ           => WACC.AST.N_For,
+             For_Init      => null,
+             For_Condition => null,
+             For_Post      => null,
+             For_Body      => null);
+
+         Parse_For_Init (Node.For_Init);
+
+         if Next_Token.Typ /= WACC.Lexer.T_Semicolon then
+            Parse_Exp (Node.For_Condition);
+         end if;
+         Expect (WACC.Lexer.T_Semicolon);
+
+         if Next_Token.Typ /= WACC.Lexer.T_Close_Paren then
+            Parse_Exp (Node.For_Post);
+         end if;
+         Expect (WACC.Lexer.T_Close_Paren);
+
+         Parse_Statement (Node.For_Body);
+      end Parse_For;
+
       procedure Parse_Statement
          (Node : out WACC.AST.Any_Statement_Node)
       is
@@ -293,7 +348,7 @@ package body WACC.Parser is
                Expect (WACC.Lexer.T_Close_Paren);
                Expect (WACC.Lexer.T_Semicolon);
             when WACC.Lexer.T_for =>
-               raise Program_Error with "TODO";
+               Parse_For (Node);
             when WACC.Lexer.T_Open_Brace =>
                Node := new WACC.AST.Statement_Node'(Typ => WACC.AST.N_Compound, Block => null);
                Parse_Block (Node.Block);

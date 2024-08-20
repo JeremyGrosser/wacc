@@ -6,7 +6,8 @@ package WACC.Strings is
 
    subtype Identifier is Ada.Strings.Unbounded.Unbounded_String;
 
-   Null_Identifier : constant Identifier := Ada.Strings.Unbounded.Null_Unbounded_String;
+   Null_Identifier : constant Identifier :=
+      Ada.Strings.Unbounded.Null_Unbounded_String;
 
    function Make_Identifier
       (Prefix : String := "tmp.")

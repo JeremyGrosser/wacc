@@ -202,3 +202,18 @@ I did a bit of refactoring in the semantic analysis pass here to more closely
 match the function names in the book's pseudocode. Every time I try to be more
 clever than the book, I have trouble remembering why I did it a few days later.
 There's a lesson there, certainly.
+
+## Chapter 8: Loops
+There's a lot of subtle behavior happening in this chapter that took me a while
+to wrap my head around. For loops in particular have a lot of moving parts.
+I've fallen into the trap of using `null` pointers to represent optional
+values. I may go back and try to fix this at some point, but it would be a
+large refactor of the ASDL data structures. I'll live with it for now.
+
+The extra credit `goto` statements I added in chapter 6 are broken now. The
+`goto_bypass_init_exp` test has a goto jump to a label inside a `for` loop.
+This is supposed to skip executing the `for` initializer. From my understanding
+of the assembly output, it does this correctly, but I'm not certain. If the
+label the `goto` is jumping to is indeed in the wrong place, I think I need to
+add a new fixup pass in the assembly stage that moves the label if it precedes
+a `For_Init_Node`. I'm not certain this is the right approach though.

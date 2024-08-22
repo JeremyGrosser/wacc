@@ -4,6 +4,7 @@ with Ada.Exceptions;
 with Ada.Text_IO;
 with Ada.Command_Line;
 with Ada.Directories;
+with Ada.Containers.Vectors;
 
 with AAA.Strings;
 with AAA.Processes;
@@ -88,25 +89,39 @@ procedure Main is
          "gcc" & "-c" & Assembly_File & "-o" & Object_File);
    end Assemble;
 
-   procedure Link
-      (Object_File, Executable_File : String)
-   is
-      use type AAA.Strings.Vector;
-   begin
-      Exec (AAA.Strings.Empty_Vector &
-         "gcc" & Object_File & "-o" & Executable_File);
-   end Link;
+   function Source_File
+      (Arg : Natural)
+      return String
+   is (CLI.Argument (Arg));
 
-   procedure Delete_If_Exists
-      (File : String)
-   is
-   begin
-      if Ada.Directories.Exists (File) then
-         Ada.Directories.Delete_File (File);
-      end if;
-   end Delete_If_Exists;
+   function Basename
+      (Arg : Natural)
+      return String
+   is (AAA.Strings.Split
+         (Text      => Source_File (Arg),
+          Separator => '.',
+          From      => AAA.Strings.Tail));
 
-   Input_File_Arg : Natural := 0;
+   function Preprocessed_File
+      (Arg : Natural)
+      return String
+   is (Basename (Arg) & ".i");
+
+   function Assembly_File
+      (Arg : Natural)
+      return String
+   is (Basename (Arg) & ".s");
+
+   function Object_File
+      (Arg : Natural)
+      return String
+   is (Basename (Arg) & ".o");
+
+   package Natural_Vectors is new Ada.Containers.Vectors
+      (Index_Type   => Positive,
+       Element_Type => Natural);
+   use Natural_Vectors;
+   Input_File_Args : Natural_Vectors.Vector := Natural_Vectors.Empty_Vector;
    Stage : Compile_Stage := Compile_Stage'Last;
    Keep_Files : Boolean := False;
 begin
@@ -129,22 +144,20 @@ begin
             elsif Arg (3 .. Arg'Last) = "keep" then
                Keep_Files := True;
             end if;
-         else
-            Input_File_Arg := I;
-         end if;
-
-         if Arg'Length = 2 and then Arg (1) = '-' then
+         elsif Arg'Length = 2 and then Arg (1) = '-' then
             case Arg (2) is
                when 'c' =>
                   Stage := Object;
                when others =>
                   raise Program_Error with "Unknown option: " & Arg (2);
             end case;
+         else
+            Append (Input_File_Args, I);
          end if;
       end;
    end loop;
 
-   if Input_File_Arg = 0 then
+   if Is_Empty (Input_File_Args) then
       Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error,
          "Usage: wacc" &
          " [-c] [--lex] [--parse] [--validate] [--tacky] [--codegen] " &
@@ -153,57 +166,45 @@ begin
       return;
    end if;
 
-   declare
-      Input_File : constant String := CLI.Argument (Input_File_Arg);
-      Basename : constant String := AAA.Strings.Split
-         (Text      => Input_File,
-          Separator => '.',
-          From      => AAA.Strings.Tail);
-      Preprocessed_File : constant String := Basename & ".i";
-      Assembly_File : constant String := Basename & ".s";
-      Object_File : constant String := Basename & ".o";
-      Executable_File : constant String := Basename;
-   begin
-      Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, "    WACC " & Basename & ".c");
-
-      Preprocess (Input_File, Preprocessed_File);
-
-      Compile (Preprocessed_File, Assembly_File, Stage);
+   for Arg of Input_File_Args loop
+      Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, "    WACC " & Source_File (Arg));
+      Preprocess (Source_File (Arg), Preprocessed_File (Arg));
+      Compile (Preprocessed_File (Arg), Assembly_File (Arg), Stage);
       if not Keep_Files then
-         Ada.Directories.Delete_File (Preprocessed_File);
+         Ada.Directories.Delete_File (Preprocessed_File (Arg));
       end if;
 
       if Stage in Object .. Link then
-         Assemble (Assembly_File, Object_File);
+         Assemble (Assembly_File (Arg), Object_File (Arg));
+         if not Keep_Files then
+            Ada.Directories.Delete_File (Assembly_File (Arg));
+         end if;
       end if;
+   end loop;
+
+   if Stage = Link then
+      declare
+         use AAA.Strings;
+         V : AAA.Strings.Vector := AAA.Strings.Empty_Vector & "gcc";
+         Executable_File : constant String := Basename (First_Element (Input_File_Args));
+      begin
+         for Arg of Input_File_Args loop
+            Append (V, Object_File (Arg));
+         end loop;
+         Append (V, "-o");
+         Append (V, Executable_File);
+         Exec (V);
+      end;
 
       if not Keep_Files then
-         Ada.Directories.Delete_File (Assembly_File);
+         for Arg of Input_File_Args loop
+            Ada.Directories.Delete_File (Object_File (Arg));
+         end loop;
       end if;
-
-      if Stage = Link then
-         Link (Object_File, Executable_File);
-         if not Keep_Files then
-            Ada.Directories.Delete_File (Object_File);
-         end if;
-      end if;
-   exception
-      when E : WACC.Lexer.Lex_Error
-             | WACC.Parser.Parse_Error
-             | WACC.Assembly.Assembly_Error
-             | WACC.Semantic_Analysis.Semantic_Error =>
-         if not Keep_Files then
-            Delete_If_Exists (Preprocessed_File);
-            Delete_If_Exists (Assembly_File);
-            Delete_If_Exists (Object_File);
-            Delete_If_Exists (Executable_File);
-         end if;
-         CLI.Set_Exit_Status (2);
-         Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error,
-            Ada.Exceptions.Exception_Information (E));
-      when E : others =>
-         CLI.Set_Exit_Status (3);
-         Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error,
-            Ada.Exceptions.Exception_Information (E));
-   end;
+   end if;
+exception
+   when E : others =>
+      CLI.Set_Exit_Status (2);
+      Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error,
+         Ada.Exceptions.Exception_Information (E));
 end Main;

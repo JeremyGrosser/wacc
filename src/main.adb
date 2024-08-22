@@ -45,7 +45,7 @@ procedure Main is
          "gcc" & "-E" & "-P" & Input_File & "-o" & Preprocessed_File);
    end Preprocess;
 
-   type Compile_Stage is (Lex, Parse, Validate, Tacky, Codegen, Final);
+   type Compile_Stage is (Lex, Parse, Validate, Tacky, Codegen, Object, Link);
 
    procedure Compile
       (Preprocessed_File, Assembly_File : String;
@@ -73,7 +73,7 @@ procedure Main is
             when Codegen =>
                WACC.Assembly.Generate (TAC, Asm);
                --  WACC.Assembly.Print (Asm);
-            when Final =>
+            when Object | Link =>
                WACC.Assembly.Emit (Asm, Assembly_File);
          end case;
       end loop;
@@ -132,13 +132,22 @@ begin
          else
             Input_File_Arg := I;
          end if;
+
+         if Arg'Length = 2 and then Arg (1) = '-' then
+            case Arg (2) is
+               when 'c' =>
+                  Stage := Object;
+               when others =>
+                  raise Program_Error with "Unknown option: " & Arg (2);
+            end case;
+         end if;
       end;
    end loop;
 
    if Input_File_Arg = 0 then
       Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error,
          "Usage: wacc" &
-         " [--lex] [--parse] [--validate] [--tacky] [--codegen] " &
+         " [-c] [--lex] [--parse] [--validate] [--tacky] [--codegen] " &
          "<input file>");
       CLI.Set_Exit_Status (1);
       return;
@@ -164,12 +173,15 @@ begin
          Ada.Directories.Delete_File (Preprocessed_File);
       end if;
 
-      if Stage = Final then
+      if Stage in Object .. Link then
          Assemble (Assembly_File, Object_File);
-         if not Keep_Files then
-            Ada.Directories.Delete_File (Assembly_File);
-         end if;
+      end if;
 
+      if not Keep_Files then
+         Ada.Directories.Delete_File (Assembly_File);
+      end if;
+
+      if Stage = Link then
          Link (Object_File, Executable_File);
          if not Keep_Files then
             Ada.Directories.Delete_File (Object_File);

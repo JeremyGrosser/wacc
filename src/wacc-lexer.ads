@@ -46,6 +46,7 @@ is
        T_Less_Equal,
        T_Greater_Equal,
        T_Equal,
+       T_Comma,
 
        T_Error);
    --  T_Error is not a real token. It's used to indicate a lex/parse error

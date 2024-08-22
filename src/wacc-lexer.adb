@@ -153,6 +153,8 @@ package body WACC.Lexer is
             Add_Single (T_Colon);
          elsif Ch = ';' then
             Add_Single (T_Semicolon);
+         elsif Ch = ',' then
+            Add_Single (T_Comma);
          else
             raise Lex_Error with "Unexpected character in input: " & Character'Pos (Ch)'Image & " '" & Ch & "'";
          end if;

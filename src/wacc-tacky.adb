@@ -227,6 +227,8 @@ package body WACC.TACKY is
                       Label        => End_Label));
                   return Dest;
                end;
+            when WACC.AST.N_Function_Call =>
+               raise Program_Error with "TODO";
          end case;
       end Generate;
 

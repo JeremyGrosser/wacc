@@ -94,6 +94,16 @@ package body WACC.AST is
                Print (This.If_True.all);
                Log (" : ");
                Print (This.If_False.all);
+            when N_Function_Call =>
+               Print (This.Function_Name);
+               Indent;
+               for A of This.Args loop
+                  Log ("Function_Arg ");
+                  Indent;
+                  Print (A.all);
+                  Dedent;
+               end loop;
+               Dedent;
          end case;
          Dedent;
       end Print;

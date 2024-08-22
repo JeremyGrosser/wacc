@@ -77,6 +77,8 @@ package body WACC.Semantic_Analysis is
             Resolve_Expression (Exp.Condition.all, Vars);
             Resolve_Expression (Exp.If_True.all, Vars);
             Resolve_Expression (Exp.If_False.all, Vars);
+         when WACC.AST.N_Function_Call =>
+            raise Program_Error with "TODO";
       end case;
    end Resolve_Expression;
 

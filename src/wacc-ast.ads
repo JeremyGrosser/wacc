@@ -1,5 +1,6 @@
 pragma Style_Checks ("M120");
 with WACC.Strings; use WACC.Strings;
+with Ada.Containers.Vectors;
 
 package WACC.AST
    with Elaborate_Body
@@ -29,6 +30,7 @@ is
    --      | Binary(binary_operator, exp, exp)
    --      | Assignment(exp, exp)
    --      | Conditional(exp condition, exp, exp)
+   --      | FunctionCall(identifier, exp* args)
    --  unary_operator = Complement | Negate | Not
    --  binary_operator = Add | Subtract | Multiply | Divide | Remainder | And
    --                  | Or | Equal | NotEqual | LessThan | LessOrEqual
@@ -68,10 +70,15 @@ is
        N_Unary,
        N_Binary,
        N_Assignment,
-       N_Conditional);
+       N_Conditional,
+       N_Function_Call);
 
    type Exp_Node;
    type Any_Exp_Node is access Exp_Node;
+
+   package Exp_Node_Vectors is new Ada.Containers.Vectors
+      (Index_Type   => Natural,
+       Element_Type => Any_Exp_Node);
 
    type Exp_Node
       (Typ : Exp_Type)
@@ -91,6 +98,9 @@ is
             Assign_Left, Assign_Right : Any_Exp_Node;
          when N_Conditional =>
             Condition, If_True, If_False : Any_Exp_Node;
+         when N_Function_Call =>
+            Function_Name : Identifier;
+            Args : Exp_Node_Vectors.Vector := Exp_Node_Vectors.Empty_Vector;
       end case;
    end record;
 

@@ -96,7 +96,7 @@ is
    is record
       case Typ is
          when N_Init_Declaration =>
-            Decl : Any_Declaration_Node;
+            Decl : Any_Variable_Declaration_Node;
          when N_Init_Expression =>
             Exp : Any_Exp_Node;
       end case;

@@ -247,8 +247,8 @@ package body WACC.Parser is
          end case;
       end Parse_Factor;
 
-      procedure Parse_Declaration
-         (Node : out WACC.AST.Any_Declaration_Node);
+      procedure Parse_Variable_Declaration
+         (Node : out WACC.AST.Any_Variable_Declaration_Node);
 
       procedure Parse_Statement
          (Node : out WACC.AST.Any_Statement_Node);
@@ -272,7 +272,7 @@ package body WACC.Parser is
             Node := new WACC.AST.For_Init_Node'
                (Typ  => WACC.AST.N_Init_Declaration,
                 Decl => null);
-            Parse_Declaration (Node.Decl);
+            Parse_Variable_Declaration (Node.Decl);
          else
             Node := new WACC.AST.For_Init_Node'
                (Typ => WACC.AST.N_Init_Expression,
@@ -396,9 +396,17 @@ package body WACC.Parser is
       end Parse_Statement;
 
       procedure Parse_Variable_Declaration
-         (Node : WACC.AST.Any_Variable_Declaration_Node)
+         (Node : out WACC.AST.Any_Variable_Declaration_Node)
       is
       begin
+         Expect (WACC.Lexer.T_int);
+         if Next_Token.Typ /= WACC.Lexer.T_Identifier then
+            raise Parse_Error with "Expected identifier after type in variable declaration";
+         end if;
+         Node := new WACC.AST.Variable_Declaration_Node'
+            (Name => Next_Token.Literal,
+             Init => null);
+         Delete_First (Input);
          if Next_Token.Typ = WACC.Lexer.T_Equal then
             Delete_First (Input);
             Parse_Exp (Node.Init);
@@ -432,37 +440,52 @@ package body WACC.Parser is
          (Node : out WACC.AST.Any_Function_Declaration_Node)
       is
       begin
-         Node := new WACC.AST.Function_Declaration_Node;
+         Expect (WACC.Lexer.T_int);
+         if Next_Token.Typ /= WACC.Lexer.T_Identifier then
+            raise Parse_Error with "Expected identifier after type in function declaration";
+         end if;
+         Node := new WACC.AST.Function_Declaration_Node'
+            (Name   => Next_Token.Literal,
+             Params => WACC.AST.Identifier_Vectors.Empty_Vector,
+             FBody  => null);
+         Delete_First (Input);
          Expect (WACC.Lexer.T_Open_Paren);
          Parse_Param_List (Node.Params);
          Expect (WACC.Lexer.T_Close_Paren);
-         Parse_Block (Node.FBody);
+         if Next_Token.Typ = WACC.Lexer.T_Semicolon then
+            Delete_First (Input);
+         else
+            Parse_Block (Node.FBody);
+         end if;
       end Parse_Function_Declaration;
 
       procedure Parse_Declaration
          (Node : out WACC.AST.Any_Declaration_Node)
       is
-         Name : WACC.Strings.Identifier;
+         --  Lookahead past the type and identifier to figure out if this is a
+         --  variable or function declaration, then push those two tokens back
+         --  before doing the actual parse.
+         Decl_Type, Decl_Name : WACC.Lexer.Token;
       begin
+         Decl_Type := Next_Token;
          Expect (WACC.Lexer.T_int);
-         if Next_Token.Typ = WACC.Lexer.T_Identifier then
-            Name := Next_Token.Literal;
-            Delete_First (Input);
-         else
-            raise Parse_Error with "Expected identifier after ""int"": " & WACC.Lexer.Image (Next_Token);
-         end if;
+         Decl_Name := Next_Token;
+         Expect (WACC.Lexer.T_Identifier);
+         Delete_First (Input);
 
          if Next_Token.Typ = WACC.Lexer.T_Open_Paren then
             Node := new WACC.AST.Declaration_Node'
                (Typ => WACC.AST.N_FunDecl,
-                Function_Declaration => new WACC.AST.Function_Declaration_Node);
-            Node.Function_Declaration.Name := Name;
+                Function_Declaration => null);
+            Prepend (Input, Decl_Name);
+            Prepend (Input, Decl_Type);
             Parse_Function_Declaration (Node.Function_Declaration);
          else
             Node := new WACC.AST.Declaration_Node'
                (Typ => WACC.AST.N_VarDecl,
-                Variable_Declaration => new WACC.AST.Variable_Declaration_Node);
-            Node.Variable_Declaration.Name := Name;
+                Variable_Declaration => null);
+            Prepend (Input, Decl_Name);
+            Prepend (Input, Decl_Type);
             Parse_Variable_Declaration (Node.Variable_Declaration);
          end if;
       end Parse_Declaration;

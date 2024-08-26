@@ -379,7 +379,11 @@ package body WACC.Parser is
       begin
          Expect (WACC.Lexer.T_int);
          if Next_Token.Typ = WACC.Lexer.T_Identifier then
-            Node := new WACC.AST.Declaration_Node'(Name => Next_Token.Literal, Init => null);
+            Node := new WACC.AST.Declaration_Node'
+               (Typ => WACC.AST.N_VarDecl,
+                Variable_Declaration => new WACC.AST.Variable_Declaration_Node'
+                  (Name => Next_Token.Literal,
+                   Init => null));
             Delete_First (Input);
          else
             raise Parse_Error with "Expected identifier after ""int"" in declaration, got " &
@@ -388,7 +392,7 @@ package body WACC.Parser is
 
          if Next_Token.Typ = WACC.Lexer.T_Equal then
             Delete_First (Input);
-            Parse_Exp (Node.Init);
+            Parse_Exp (Node.Variable_Declaration.Init);
          end if;
          Expect (WACC.Lexer.T_Semicolon);
       end Parse_Declaration;
@@ -429,10 +433,11 @@ package body WACC.Parser is
       end Parse_Block;
 
       procedure Parse_Function
-         (Node : in out WACC.AST.Function_Definition_Node)
+         (Node : in out WACC.AST.Any_Function_Declaration_Node)
       is
       begin
          Expect (WACC.Lexer.T_int);
+         Node := new WACC.AST.Function_Declaration_Node;
          if Next_Token.Typ = WACC.Lexer.T_Identifier then
             Node.Name := Next_Token.Literal;
             Delete_First (Input);
@@ -440,12 +445,13 @@ package body WACC.Parser is
             raise Parse_Error with "Expected identifier after ""int"": " & WACC.Lexer.Image (Next_Token);
          end if;
          Expect (WACC.Lexer.T_Open_Paren);
+         --  Node.Params?
          Expect (WACC.Lexer.T_void);
          Expect (WACC.Lexer.T_Close_Paren);
          Parse_Block (Node.FBody);
       end Parse_Function;
    begin
-      Parse_Function (Tree.Function_Definition);
+      Parse_Function (Tree.Function_Declaration);
       if not Is_Empty (Input) then
          raise Parse_Error with "Unexpected token after function definition: " & WACC.Lexer.Image (Next_Token);
       end if;

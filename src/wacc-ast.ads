@@ -35,9 +35,13 @@ is
       (Index_Type   => Natural,
        Element_Type => Any_Exp_Node);
 
+   package Function_Declaration_Vectors is new Ada.Containers.Vectors
+      (Index_Type   => Positive,
+       Element_Type => Any_Function_Declaration_Node);
+
    --  program = Program(function_declaration*)
    type Program_Node is record
-      Function_Declaration : Any_Function_Declaration_Node;
+      Function_Declarations : Function_Declaration_Vectors.Vector;
    end record;
 
    --  declaration = FunDecl(function_declaration) | VarDecl(variable_declaration)

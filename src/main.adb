@@ -61,7 +61,7 @@ procedure Main is
          case S is
             when Lex =>
                WACC.Lexer.Lex (Preprocessed_File, Tokens);
-               --  Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, Tokens'Image);
+               --  WACC.Lexer.Print (Tokens);
             when Parse =>
                WACC.Parser.Parse_Program (Tokens, Tree);
                --  WACC.AST.Print (Tree);

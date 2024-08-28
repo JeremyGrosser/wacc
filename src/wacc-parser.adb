@@ -53,7 +53,7 @@ package body WACC.Parser is
          return WACC.Lexer.Token;
       function Next_Token
          return WACC.Lexer.Token;
-      function Peek_Token
+      function Peek_Token (N : Positive := 1)
          return WACC.Lexer.Token;
       procedure Expect
          (Typ : WACC.Lexer.Token_Type);
@@ -84,8 +84,9 @@ package body WACC.Parser is
       is (if not Is_Empty (Input) then First_Element (Input) else Error_Token ("No more tokens in input"));
 
       function Peek_Token
+         (N : Positive := 1)
          return WACC.Lexer.Token
-      is (Element (Input, First_Index (Input) + 1));
+      is (Element (Input, First_Index (Input) + N));
 
       procedure Expect
          (Typ : WACC.Lexer.Token_Type)
@@ -271,23 +272,25 @@ package body WACC.Parser is
                    Int => Parse_Int (Ada.Strings.Unbounded.To_String (Next_Token.Literal)));
                Delete_First (Input);
             when WACC.Lexer.T_Identifier =>
-               Node := new WACC.AST.Exp_Node'
-                  (Typ  => WACC.AST.N_Var,
-                   Name => Next_Token.Literal);
-               Delete_First (Input);
-               if Next_Token.Typ = WACC.Lexer.T_Open_Paren then
-                  Delete_First (Input);
+               if Peek_Token.Typ = WACC.Lexer.T_Open_Paren then
                   Node := new WACC.AST.Exp_Node'
                      (Typ           => WACC.AST.N_Function_Call,
-                      Function_Name => Node.Name,
+                      Function_Name => Next_Token.Literal,
                       Args          => WACC.AST.Exp_Node_Vectors.Empty_Vector);
+                  Delete_First (Input);
                   Parse_Argument_List (Node.Args);
+               else
+                  Node := new WACC.AST.Exp_Node'
+                     (Typ  => WACC.AST.N_Var,
+                      Name => Next_Token.Literal);
+                  Delete_First (Input);
                end if;
             when WACC.Lexer.T_Dash | WACC.Lexer.T_Tilde | WACC.Lexer.T_Bang =>
                Node := new WACC.AST.Exp_Node'(Typ => WACC.AST.N_Unary, others => <>);
                Parse_Unop (Node.Unary_Operator);
                Parse_Factor (Node.Exp);
             when WACC.Lexer.T_Open_Paren =>
+               --  TODO handle function call args list
                Delete_First (Input);
                Parse_Exp (Node);
                Expect (WACC.Lexer.T_Close_Paren);
@@ -421,20 +424,9 @@ package body WACC.Parser is
                Node := new WACC.AST.Statement_Node'(Typ => WACC.AST.N_Compound, Block => null);
                Parse_Block (Node.Block);
             when others =>
-               if Next_Token.Typ = WACC.Lexer.T_Identifier and then
-                  Length (Input) > 1 and then
-                  Peek_Token.Typ = WACC.Lexer.T_Colon
-               then
-                  Node := new WACC.AST.Statement_Node'
-                     (Typ   => WACC.AST.N_Label,
-                      Label => Next_Token.Literal);
-                  Delete_First (Input);
-                  Expect (WACC.Lexer.T_Colon);
-               else
-                  Node := new WACC.AST.Statement_Node'(Typ => WACC.AST.N_Expression, Exp => null);
-                  Parse_Exp (Node.Exp);
-                  Expect (WACC.Lexer.T_Semicolon);
-               end if;
+               Node := new WACC.AST.Statement_Node'(Typ => WACC.AST.N_Expression, Exp => null);
+               Parse_Exp (Node.Exp);
+               Expect (WACC.Lexer.T_Semicolon);
          end case;
       end Parse_Statement;
 
@@ -450,6 +442,7 @@ package body WACC.Parser is
             (Name => Next_Token.Literal,
              Init => null);
          Delete_First (Input);
+
          if Next_Token.Typ = WACC.Lexer.T_Equal then
             Delete_First (Input);
             Parse_Exp (Node.Init);
@@ -463,6 +456,7 @@ package body WACC.Parser is
          use WACC.AST.Identifier_Vectors;
       begin
          if Next_Token.Typ = WACC.Lexer.T_void then
+            Delete_First (Input);
             Clear (Node);
             return;
          end if;
@@ -506,29 +500,17 @@ package body WACC.Parser is
          (Node : out WACC.AST.Any_Declaration_Node)
       is
          --  Lookahead past the type and identifier to figure out if this is a
-         --  variable or function declaration, then push those two tokens back
-         --  before doing the actual parse.
-         Decl_Type, Decl_Name : WACC.Lexer.Token;
+         --  variable or function declaration.
       begin
-         Decl_Type := Next_Token;
-         Expect (WACC.Lexer.T_int);
-         Decl_Name := Next_Token;
-         Expect (WACC.Lexer.T_Identifier);
-         Delete_First (Input);
-
-         if Next_Token.Typ = WACC.Lexer.T_Open_Paren then
+         if Peek_Token (2).Typ = WACC.Lexer.T_Open_Paren then
             Node := new WACC.AST.Declaration_Node'
                (Typ => WACC.AST.N_FunDecl,
                 Function_Declaration => null);
-            Prepend (Input, Decl_Name);
-            Prepend (Input, Decl_Type);
             Parse_Function_Declaration (Node.Function_Declaration);
          else
             Node := new WACC.AST.Declaration_Node'
                (Typ => WACC.AST.N_VarDecl,
                 Variable_Declaration => null);
-            Prepend (Input, Decl_Name);
-            Prepend (Input, Decl_Type);
             Parse_Variable_Declaration (Node.Variable_Declaration);
          end if;
       end Parse_Declaration;
@@ -567,11 +549,13 @@ package body WACC.Parser is
          end loop;
          Expect (WACC.Lexer.T_Close_Brace);
       end Parse_Block;
+
+      Next_Decl : WACC.AST.Any_Function_Declaration_Node;
    begin
-      Parse_Function_Declaration (Tree.Function_Declaration);
-      if not Is_Empty (Input) then
-         raise Parse_Error with "Unexpected token after function definition: " & WACC.Lexer.Image (Next_Token);
-      end if;
+      while not Is_Empty (Input) loop
+         Parse_Function_Declaration (Next_Decl);
+         WACC.AST.Function_Declaration_Vectors.Append (Tree.Function_Declarations, Next_Decl);
+      end loop;
    end Parse_Program;
 
 end WACC.Parser;

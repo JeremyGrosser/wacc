@@ -82,8 +82,8 @@ package body WACC.Semantic_Analysis is
       end case;
    end Resolve_Expression;
 
-   procedure Resolve_Declaration
-      (Decl : in out WACC.AST.Declaration_Node;
+   procedure Resolve_Variable_Declaration
+      (Decl : in out WACC.AST.Variable_Declaration_Node;
        Vars : in out Variable_Map)
    is
    begin
@@ -106,6 +106,30 @@ package body WACC.Semantic_Analysis is
 
          Decl.Name := Unique;
       end;
+   end Resolve_Variable_Declaration;
+
+   procedure Resolve_Function_Declaration
+      (Decl : in out WACC.AST.Function_Declaration_Node;
+       Vars : in out Variable_Map)
+   is
+      use type WACC.AST.Any_Block_Node;
+   begin
+      if Decl.FBody /= null then
+         Resolve_Block (Decl.FBody.all, Vars);
+      end if;
+   end Resolve_Function_Declaration;
+
+   procedure Resolve_Declaration
+      (Decl : in out WACC.AST.Declaration_Node;
+       Vars : in out Variable_Map)
+   is
+   begin
+      case Decl.Typ is
+         when WACC.AST.N_FunDecl =>
+            Resolve_Function_Declaration (Decl.Function_Declaration.all, Vars);
+         when WACC.AST.N_VarDecl =>
+            Resolve_Variable_Declaration (Decl.Variable_Declaration.all, Vars);
+      end case;
    end Resolve_Declaration;
 
    procedure Resolve_Optional_Exp
@@ -128,7 +152,7 @@ package body WACC.Semantic_Analysis is
          when WACC.AST.N_Init_Expression =>
             Resolve_Optional_Exp (Tree.Exp, Vars);
          when WACC.AST.N_Init_Declaration =>
-            Resolve_Declaration (Tree.Decl.all, Vars);
+            Resolve_Variable_Declaration (Tree.Decl.all, Vars);
       end case;
    end Resolve_For_Init;
 
@@ -179,6 +203,7 @@ package body WACC.Semantic_Analysis is
    is
       use type WACC.AST.Any_Block_Item_Node;
       use type WACC.AST.Block_Item_Type;
+      use type WACC.AST.Declaration_Type;
    begin
       case Tree.Typ is
          when WACC.AST.N_Label =>
@@ -193,8 +218,8 @@ package body WACC.Semantic_Analysis is
                N : WACC.AST.Any_Block_Item_Node := Next;
             begin
                while N /= null and then N.Typ = WACC.AST.N_Declaration loop
-                  if N.Decl.Init /= null then
-                     raise Semantic_Error with "Label cannot precede a declaration with initializer.";
+                  if N.Decl.Typ = WACC.AST.N_VarDecl and then N.Decl.Variable_Declaration.Init /= null then
+                     raise Semantic_Error with "Label cannot precede a variable declaration with initializer.";
                   end if;
                   N := N.Next;
                end loop;
@@ -309,21 +334,26 @@ package body WACC.Semantic_Analysis is
    end Label_Block;
 
    procedure Analyze
-      (Tree : in out WACC.AST.Function_Definition_Node)
+      (Tree : in out WACC.AST.Function_Declaration_Node)
    is
+      use type WACC.AST.Any_Block_Node;
       Vars : Variable_Map := Identifier_Entry_Maps.Empty_Map;
       Label : Identifier := Null_Identifier;
    begin
       Clear (Labels);
-      Resolve_Block (Tree.FBody.all, Vars);
-      Label_Block (Tree.FBody.all, Label);
+      if Tree.FBody /= null then
+         Resolve_Block (Tree.FBody.all, Vars);
+         Label_Block (Tree.FBody.all, Label);
+      end if;
    end Analyze;
 
    procedure Analyze
       (Tree : in out WACC.AST.Program_Node)
    is
    begin
-      Analyze (Tree.Function_Definition);
+      for Decl of Tree.Function_Declarations loop
+         Analyze (Decl.all);
+      end loop;
    end Analyze;
 
 end WACC.Semantic_Analysis;

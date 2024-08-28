@@ -1,4 +1,5 @@
 pragma Style_Checks ("M120");
+with Ada.Text_IO;
 with WACC.IO;
 
 package body WACC.Lexer is
@@ -173,5 +174,16 @@ package body WACC.Lexer is
          return T.Typ'Image;
       end if;
    end Image;
+
+   procedure Print
+      (Tokens : Token_List)
+   is
+      use Ada.Text_IO;
+   begin
+      Put_Line (Standard_Error, "[Lexer]");
+      for Tok of Tokens loop
+         Put_Line (Standard_Error, Image (Tok));
+      end loop;
+   end Print;
 
 end WACC.Lexer;

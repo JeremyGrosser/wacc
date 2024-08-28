@@ -71,4 +71,7 @@ is
       (T : Token)
       return String;
 
+   procedure Print
+      (Tokens : Token_List);
+
 end WACC.Lexer;

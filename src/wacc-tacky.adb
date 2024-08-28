@@ -7,10 +7,31 @@ package body WACC.TACKY is
       (Tree : WACC.AST.Program_Node;
        Node : out WACC.TACKY.Program_Node)
    is
+      procedure Generate
+         (Tree : WACC.AST.Declaration_Node;
+          Node : in out WACC.TACKY.Instruction_Node_Vectors.Vector);
+      procedure Generate
+         (Tree : WACC.AST.Variable_Declaration_Node;
+          Node : in out WACC.TACKY.Instruction_Node_Vectors.Vector);
+      procedure Generate
+         (Tree : WACC.AST.Block_Node;
+          Node : in out WACC.TACKY.Instruction_Node_Vectors.Vector);
+      procedure Generate
+         (Tree : WACC.AST.Block_Item_Node;
+          Node : in out WACC.TACKY.Instruction_Node_Vectors.Vector);
+      procedure Generate
+         (Tree : WACC.AST.For_Init_Node;
+          Node : in out WACC.TACKY.Instruction_Node_Vectors.Vector);
+      procedure Generate
+         (Tree : WACC.AST.Statement_Node;
+          Node : in out WACC.TACKY.Instruction_Node_Vectors.Vector);
       function Generate
          (Tree : WACC.AST.Exp_Node;
           Node : in out WACC.TACKY.Instruction_Node_Vectors.Vector)
           return Any_Val_Node;
+      procedure Generate
+         (Tree : WACC.AST.Function_Declaration_Node;
+          Node : out WACC.TACKY.Function_Definition_Node);
 
       function Convert_Unop
          (Unop : WACC.AST.Unary_Operator_Node)
@@ -233,10 +254,6 @@ package body WACC.TACKY is
       end Generate;
 
       procedure Generate
-         (Tree : WACC.AST.Declaration_Node;
-          Node : in out WACC.TACKY.Instruction_Node_Vectors.Vector);
-
-      procedure Generate
          (Tree : WACC.AST.For_Init_Node;
           Node : in out WACC.TACKY.Instruction_Node_Vectors.Vector)
       is
@@ -256,10 +273,6 @@ package body WACC.TACKY is
                Generate (Tree.Decl.all, Node);
          end case;
       end Generate;
-
-      procedure Generate
-         (Tree : WACC.AST.Block_Node;
-          Node : in out WACC.TACKY.Instruction_Node_Vectors.Vector);
 
       procedure Generate
          (Tree : WACC.AST.Statement_Node;
@@ -390,7 +403,7 @@ package body WACC.TACKY is
       end Generate;
 
       procedure Generate
-         (Tree : WACC.AST.Declaration_Node;
+         (Tree : WACC.AST.Variable_Declaration_Node;
           Node : in out WACC.TACKY.Instruction_Node_Vectors.Vector)
       is
          use type WACC.AST.Any_Exp_Node;
@@ -401,6 +414,20 @@ package body WACC.TACKY is
                 Copy_Src => Generate (Tree.Init.all, Node),
                 Copy_Dst => new Val_Node'(Typ => TA_Var, Name => Tree.Name)));
          end if;
+      end Generate;
+
+      procedure Generate
+         (Tree : WACC.AST.Declaration_Node;
+          Node : in out WACC.TACKY.Instruction_Node_Vectors.Vector)
+      is
+      begin
+         case Tree.Typ is
+            when WACC.AST.N_FunDecl =>
+               raise Program_Error with "TODO";
+               --  Generate (Tree.Function_Declaration.all);
+            when WACC.AST.N_VarDecl =>
+               Generate (Tree.Variable_Declaration.all, Node);
+         end case;
       end Generate;
 
       procedure Generate
@@ -431,20 +458,26 @@ package body WACC.TACKY is
       end Generate;
 
       procedure Generate
-         (Tree : WACC.AST.Function_Definition_Node;
+         (Tree : WACC.AST.Function_Declaration_Node;
           Node : out WACC.TACKY.Function_Definition_Node)
       is
+         use type WACC.AST.Any_Block_Node;
       begin
          Node.Name := Tree.Name;
-         Generate (Tree.FBody.all, Node.FBody);
-         Instruction_Node_Vectors.Append (Node.FBody, new Instruction_Node'
-            (Typ => TA_Return,
-             Val => new Val_Node'
-               (Typ => TA_Constant,
-                Int => 0)));
+         if Tree.FBody /= null then
+            Generate (Tree.FBody.all, Node.FBody);
+            Instruction_Node_Vectors.Append (Node.FBody, new Instruction_Node'
+               (Typ => TA_Return,
+                Val => new Val_Node'
+                  (Typ => TA_Constant,
+                   Int => 0)));
+         end if;
       end Generate;
    begin
-      Generate (Tree.Function_Definition, Node.Function_Definition);
+      for Decl of Tree.Function_Declarations loop
+         Generate (Decl.all, Node.Function_Definition);
+         --  TODO maybe not put every declaration in one TACKY.Function_Definition?
+      end loop;
    end Generate;
 
    procedure Print

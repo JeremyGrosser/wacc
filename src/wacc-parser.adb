@@ -13,6 +13,67 @@ package body WACC.Parser is
       use WACC.Lexer.Token_Vectors;
       Input : WACC.Lexer.Token_List := Tokens;
 
+      type Operator_Precedence is range 0 .. 51;
+
+      --  Grammar
+      procedure Parse_Declaration
+         (Node : out WACC.AST.Any_Declaration_Node);
+      procedure Parse_Variable_Declaration
+         (Node : out WACC.AST.Any_Variable_Declaration_Node);
+      procedure Parse_Function_Declaration
+         (Node : out WACC.AST.Any_Function_Declaration_Node);
+      procedure Parse_Param_List
+         (Node : in out WACC.AST.Identifier_Vectors.Vector);
+      procedure Parse_Block
+         (Node : out WACC.AST.Any_Block_Node);
+      procedure Parse_Block_Item
+         (Node : out WACC.AST.Any_Block_Item_Node);
+      procedure Parse_For_Init
+         (Node : out WACC.AST.Any_For_Init_Node);
+      procedure Parse_Statement
+         (Node : out WACC.AST.Any_Statement_Node);
+      procedure Parse_Exp
+         (Left : out WACC.AST.Any_Exp_Node;
+          Min_Precedence : Operator_Precedence := Operator_Precedence'First);
+      procedure Parse_Factor
+         (Node : out WACC.AST.Any_Exp_Node);
+      procedure Parse_Argument_List
+         (Node : in out WACC.AST.Exp_Node_Vectors.Vector);
+      procedure Parse_Unop
+         (Node : out WACC.AST.Any_Unary_Operator_Node);
+      procedure Parse_Binop
+         (Node : out WACC.AST.Any_Binary_Operator_Node);
+      function Parse_Int
+         (Str : String)
+         return Long_Integer;
+
+      --  Token manipulation
+      function Error_Token
+         (Message : String)
+         return WACC.Lexer.Token;
+      function Next_Token
+         return WACC.Lexer.Token;
+      function Peek_Token
+         return WACC.Lexer.Token;
+      procedure Expect
+         (Typ : WACC.Lexer.Token_Type);
+
+      --  Expression helpers
+      function Precedence
+         (Typ : WACC.Lexer.Binary_Operator_Token_Type)
+         return Operator_Precedence;
+      function Parse_Condition_Middle
+         return WACC.AST.Any_Exp_Node;
+      procedure Parse_Optional_Exp
+         (Node : out WACC.AST.Any_Exp_Node;
+          Stop : WACC.Lexer.Token_Type);
+
+      --  Statement helpers
+      procedure Parse_For
+         (Node : out WACC.AST.Any_Statement_Node);
+
+      ----------------------------------------
+
       function Error_Token
          (Message : String)
          return WACC.Lexer.Token
@@ -108,11 +169,6 @@ package body WACC.Parser is
          Delete_First (Input);
       end Parse_Binop;
 
-      procedure Parse_Factor
-         (Node : out WACC.AST.Any_Exp_Node);
-
-      type Operator_Precedence is range 0 .. 51;
-
       function Precedence
          (Typ : WACC.Lexer.Binary_Operator_Token_Type)
          return Operator_Precedence
@@ -139,10 +195,6 @@ package body WACC.Parser is
          end case;
       end Precedence;
 
-      procedure Parse_Exp
-         (Left : out WACC.AST.Any_Exp_Node;
-          Min_Precedence : Operator_Precedence := Operator_Precedence'First);
-
       function Parse_Condition_Middle
          return WACC.AST.Any_Exp_Node
       is
@@ -153,9 +205,6 @@ package body WACC.Parser is
          Expect (WACC.Lexer.T_Colon);
          return Middle;
       end Parse_Condition_Middle;
-
-      procedure Parse_Block
-         (Node : out WACC.AST.Any_Block_Node);
 
       procedure Parse_Exp
          (Left : out WACC.AST.Any_Exp_Node;
@@ -246,12 +295,6 @@ package body WACC.Parser is
                raise Parse_Error with "Unexpected token in factor: " & WACC.Lexer.Image (Next_Token);
          end case;
       end Parse_Factor;
-
-      procedure Parse_Variable_Declaration
-         (Node : out WACC.AST.Any_Variable_Declaration_Node);
-
-      procedure Parse_Statement
-         (Node : out WACC.AST.Any_Statement_Node);
 
       procedure Parse_Optional_Exp
          (Node : out WACC.AST.Any_Exp_Node;
@@ -524,7 +567,6 @@ package body WACC.Parser is
          end loop;
          Expect (WACC.Lexer.T_Close_Brace);
       end Parse_Block;
-
    begin
       Parse_Function_Declaration (Tree.Function_Declaration);
       if not Is_Empty (Input) then

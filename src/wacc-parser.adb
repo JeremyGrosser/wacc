@@ -278,7 +278,11 @@ package body WACC.Parser is
                       Function_Name => Next_Token.Literal,
                       Args          => WACC.AST.Exp_Node_Vectors.Empty_Vector);
                   Delete_First (Input);
-                  Parse_Argument_List (Node.Args);
+                  Expect (WACC.Lexer.T_Open_Paren);
+                  if Next_Token.Typ /= WACC.Lexer.T_Close_Paren then
+                     Parse_Argument_List (Node.Args);
+                  end if;
+                  Expect (WACC.Lexer.T_Close_Paren);
                else
                   Node := new WACC.AST.Exp_Node'
                      (Typ  => WACC.AST.N_Var,
@@ -290,7 +294,6 @@ package body WACC.Parser is
                Parse_Unop (Node.Unary_Operator);
                Parse_Factor (Node.Exp);
             when WACC.Lexer.T_Open_Paren =>
-               --  TODO handle function call args list
                Delete_First (Input);
                Parse_Exp (Node);
                Expect (WACC.Lexer.T_Close_Paren);

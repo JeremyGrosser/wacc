@@ -389,14 +389,6 @@ package body WACC.TACKY is
                Append (Node, new Instruction_Node'
                   (Typ   => TA_Label,
                    Label => "break_" & Tree.For_Label));
-            when WACC.AST.N_Goto =>
-               Append (Node, new Instruction_Node'
-                  (Typ      => TA_Jump,
-                   J_Target => Tree.Label));
-            when WACC.AST.N_Label =>
-               Append (Node, new Instruction_Node'
-                  (Typ   => TA_Label,
-                   Label => Tree.Label));
             when WACC.AST.N_Null =>
                null;
          end case;

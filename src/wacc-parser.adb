@@ -378,13 +378,6 @@ package body WACC.Parser is
                else
                   Node.If_False := null;
                end if;
-            when WACC.Lexer.T_goto =>
-               Delete_First (Input);
-               Node := new WACC.AST.Statement_Node'
-                  (Typ   => WACC.AST.N_Goto,
-                   Label => Next_Token.Literal);
-               Delete_First (Input);
-               Expect (WACC.Lexer.T_Semicolon);
             when WACC.Lexer.T_break =>
                Delete_First (Input);
                Node := new WACC.AST.Statement_Node'

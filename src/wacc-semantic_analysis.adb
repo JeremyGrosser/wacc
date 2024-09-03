@@ -1,7 +1,6 @@
 pragma Style_Checks ("M120");
 with WACC.Strings; use WACC.Strings;
 with Ada.Containers.Hashed_Maps;
-with Ada.Containers.Hashed_Sets;
 
 package body WACC.Semantic_Analysis is
 
@@ -34,13 +33,6 @@ package body WACC.Semantic_Analysis is
          end;
       end loop;
    end Copy_Variable_Map;
-
-   package Identifier_Sets is new Ada.Containers.Hashed_Sets
-      (Element_Type        => Identifier,
-       Hash                => WACC.Strings.Hash,
-       Equivalent_Elements => WACC.Strings."=");
-   use Identifier_Sets;
-   Labels : Identifier_Sets.Set;
 
    procedure Resolve_Block
       (Tree : in out WACC.AST.Block_Node;
@@ -191,49 +183,10 @@ package body WACC.Semantic_Analysis is
          when WACC.AST.N_While | WACC.AST.N_DoWhile =>
             Resolve_Expression (Tree.While_Condition.all, Vars);
             Resolve_Statement (Tree.While_Body.all, Vars);
-         when WACC.AST.N_Goto | WACC.AST.N_Label | WACC.AST.N_Null | WACC.AST.N_Break
-            | WACC.AST.N_Continue =>
+         when WACC.AST.N_Null | WACC.AST.N_Break | WACC.AST.N_Continue =>
             null;
       end case;
    end Resolve_Statement;
-
-   procedure Resolve_Labels
-      (Tree : in out WACC.AST.Statement_Node;
-       Next : WACC.AST.Any_Block_Item_Node)
-   is
-      use type WACC.AST.Any_Block_Item_Node;
-      use type WACC.AST.Block_Item_Type;
-      use type WACC.AST.Declaration_Type;
-   begin
-      case Tree.Typ is
-         when WACC.AST.N_Label =>
-            if Contains (Labels, Tree.Label) then
-               raise Semantic_Error with "Label names must be unique within a function";
-            else
-               Include (Labels, Tree.Label);
-            end if;
-
-            declare
-               use type WACC.AST.Any_Exp_Node;
-               N : WACC.AST.Any_Block_Item_Node := Next;
-            begin
-               while N /= null and then N.Typ = WACC.AST.N_Declaration loop
-                  if N.Decl.Typ = WACC.AST.N_VarDecl and then N.Decl.Variable_Declaration.Init /= null then
-                     raise Semantic_Error with "Label cannot precede a variable declaration with initializer.";
-                  end if;
-                  N := N.Next;
-               end loop;
-
-               if N = null then
-                  raise Semantic_Error with "Label must precede a statement";
-               end if;
-            end;
-         when WACC.AST.N_Goto =>
-            null;
-         when others =>
-            null;
-      end case;
-   end Resolve_Labels;
 
    procedure Resolve_Block_Item
       (Tree : in out WACC.AST.Block_Item_Node;
@@ -243,7 +196,6 @@ package body WACC.Semantic_Analysis is
       case Tree.Typ is
          when WACC.AST.N_Statement =>
             Resolve_Statement (Tree.Stmt.all, Vars);
-            Resolve_Labels (Tree.Stmt.all, Tree.Next);
          when WACC.AST.N_Declaration =>
             Resolve_Declaration (Tree.Decl.all, Vars);
       end case;
@@ -298,9 +250,6 @@ package body WACC.Semantic_Analysis is
             end if;
          when WACC.AST.N_Compound =>
             Label_Block (Tree.Block.all, Label);
-         when WACC.AST.N_Goto | WACC.AST.N_Label =>
-            --  Should Resolve_Labels be moved here?
-            null;
          when WACC.AST.N_Return | WACC.AST.N_Expression | WACC.AST.N_Null =>
             null;
       end case;
@@ -340,7 +289,6 @@ package body WACC.Semantic_Analysis is
       Vars : Variable_Map := Identifier_Entry_Maps.Empty_Map;
       Label : Identifier := Null_Identifier;
    begin
-      Clear (Labels);
       if Tree.FBody /= null then
          Resolve_Block (Tree.FBody.all, Vars);
          Label_Block (Tree.FBody.all, Label);

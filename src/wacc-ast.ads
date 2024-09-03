@@ -115,8 +115,6 @@ is
    --            | While(exp condition, statement body, identifier label)
    --            | DoWhile(statement body, exp condition, identifier label)
    --            | For(for_init init, exp? condition, exp? post, statement body)
-   --            | Goto(identifier label)
-   --            | Label(identifier name)
    --            | Null
    type Statement_Type is
       (N_Return,
@@ -128,8 +126,6 @@ is
        N_While,
        N_DoWhile,
        N_For,
-       N_Goto,
-       N_Label,
        N_Null);
    type Statement_Node
       (Typ : Statement_Type)
@@ -153,7 +149,7 @@ is
             For_Condition : Any_Exp_Node;
             For_Post : Any_Exp_Node;
             For_Body : Any_Statement_Node;
-         when N_Break | N_Continue | N_Goto | N_Label =>
+         when N_Break | N_Continue =>
             Label : Identifier;
          when N_Null =>
             null;

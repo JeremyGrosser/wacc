@@ -247,7 +247,7 @@ package body WACC.AST is
             Indent;
             Print (This.For_Body.all);
             Dedent;
-         when N_Break | N_Continue | N_Goto | N_Label =>
+         when N_Break | N_Continue =>
             Print (This.Label);
          when N_Null =>
             null;

@@ -32,6 +32,17 @@ package body WACC.TACKY is
       procedure Generate
          (Tree : WACC.AST.Function_Declaration_Node;
           Node : out WACC.TACKY.Function_Definition_Node);
+      function Convert_Unop
+         (Unop : WACC.AST.Unary_Operator_Node)
+         return WACC.TACKY.Any_Unary_Operator_Node;
+      function Generate_Unary
+         (Tree : WACC.AST.Exp_Node;
+          Node : in out WACC.TACKY.Instruction_Node_Vectors.Vector)
+          return WACC.TACKY.Any_Val_Node;
+      function Generate_Binary
+         (Tree : WACC.AST.Exp_Node;
+          Node : in out WACC.TACKY.Instruction_Node_Vectors.Vector)
+          return WACC.TACKY.Any_Val_Node;
 
       function Convert_Unop
          (Unop : WACC.AST.Unary_Operator_Node)
@@ -74,6 +85,9 @@ package body WACC.TACKY is
          Result : constant Any_Val_Node := new Val_Node'(Typ => TA_Var, Name => Make_Identifier);
          V1, V2 : Any_Val_Node;
          Insn   : WACC.TACKY.Any_Instruction_Node;
+
+         procedure Generate_Simple_Binary
+            (Binop : Binary_Operator_Type);
 
          procedure Generate_Simple_Binary
             (Binop : Binary_Operator_Type)
@@ -476,6 +490,23 @@ package body WACC.TACKY is
       (Node : WACC.TACKY.Program_Node)
    is
       Indent_Level : Natural := 0;
+
+      procedure Write
+         (Str : String);
+      procedure Indent;
+      procedure Dedent;
+      procedure Print
+         (Node : WACC.Strings.Identifier);
+      procedure Print
+         (Node : WACC.TACKY.Binary_Operator_Node);
+      procedure Print
+         (Node : WACC.TACKY.Unary_Operator_Node);
+      procedure Print
+         (Node : WACC.TACKY.Val_Node);
+      procedure Print
+         (Node : WACC.TACKY.Instruction_Node);
+      procedure Print
+         (Node : WACC.TACKY.Function_Definition_Node);
 
       procedure Write
          (Str : String)

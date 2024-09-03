@@ -11,6 +11,41 @@ package body WACC.Assembly is
    is
       function Convert_Operand
          (Tree : WACC.TACKY.Val_Node)
+         return WACC.Assembly.Any_Operand_Node;
+      function Convert_Condition
+         (Op : WACC.TACKY.Binary_Operator_Node)
+         return WACC.Assembly.Condition_Code;
+      procedure Generate_Unary_Operation
+         (Tree : WACC.TACKY.Instruction_Node;
+          Node : in out WACC.Assembly.Instruction_Node_Vectors.Vector);
+      procedure Generate_Binary_Operation
+         (Tree : WACC.TACKY.Instruction_Node;
+          Node : in out WACC.Assembly.Instruction_Node_Vectors.Vector);
+      procedure Generate
+         (Tree : WACC.TACKY.Instruction_Node;
+          Node : in out WACC.Assembly.Instruction_Node_Vectors.Vector);
+      procedure Generate
+         (Tree : WACC.TACKY.Function_Definition_Node;
+          Node : out WACC.Assembly.Function_Definition_Node);
+      procedure Replace_Pseudo
+         (Node : in out WACC.Assembly.Any_Operand_Node);
+      procedure Replace_Pseudo
+         (Node : in out WACC.Assembly.Instruction_Node);
+      procedure Replace_Pseudo
+         (Node : in out WACC.Assembly.Function_Definition_Node);
+      procedure Stack_Fixup
+         (Node : in out WACC.Assembly.Function_Definition_Node);
+      procedure Binop_Fixup
+         (Node : in out WACC.Assembly.Function_Definition_Node);
+
+      package Stack_Maps is new Ada.Containers.Indefinite_Ordered_Maps
+         (Key_Type     => String,
+          Element_Type => Stack_Offset);
+      Pseudo_Map : Stack_Maps.Map := Stack_Maps.Empty_Map;
+      Next_Stack_Offset : Stack_Offset := Stack_Offset'Last;
+
+      function Convert_Operand
+         (Tree : WACC.TACKY.Val_Node)
          return WACC.Assembly.Any_Operand_Node
       is
       begin
@@ -244,12 +279,6 @@ package body WACC.Assembly is
          end loop;
       end Generate;
 
-      package Stack_Maps is new Ada.Containers.Indefinite_Ordered_Maps
-         (Key_Type     => String,
-          Element_Type => Stack_Offset);
-      Pseudo_Map : Stack_Maps.Map := Stack_Maps.Empty_Map;
-      Next_Stack_Offset : Stack_Offset := Stack_Offset'Last;
-
       procedure Replace_Pseudo
          (Node : in out WACC.Assembly.Any_Operand_Node)
       is
@@ -445,6 +474,25 @@ package body WACC.Assembly is
       Indent_Level : Natural := 0;
 
       procedure Write
+         (Str : String);
+      procedure Indent;
+      procedure Dedent;
+      procedure Print
+         (Node : Identifier);
+      procedure Print
+         (Node : WACC.Assembly.Reg_Node);
+      procedure Print
+         (Node : WACC.Assembly.Operand_Node);
+      procedure Print
+         (Node : WACC.Assembly.Unary_Operator_Node);
+      procedure Print
+         (Node : WACC.Assembly.Binary_Operator_Node);
+      procedure Print
+         (Node : WACC.Assembly.Instruction_Node);
+      procedure Print
+         (Node : WACC.Assembly.Function_Definition_Node);
+
+      procedure Write
          (Str : String)
       is
       begin
@@ -614,6 +662,29 @@ package body WACC.Assembly is
       (Node : WACC.Assembly.Program_Node;
        Filename : String)
    is
+      procedure Indent;
+      procedure Write
+         (Str : String);
+      procedure Write
+         (N : Long_Integer);
+      procedure New_Line;
+      procedure Print
+         (Node : WACC.Assembly.Reg_Node);
+      procedure Print
+         (Node : WACC.Assembly.Operand_Node);
+      procedure Print
+         (Node : WACC.Assembly.Unary_Operator_Node);
+      procedure Print
+         (Node : WACC.Assembly.Binary_Operator_Node);
+      procedure Print
+         (Cond : Condition_Code);
+      procedure Print
+         (Name : Identifier);
+      procedure Print
+         (Node : WACC.Assembly.Instruction_Node);
+      procedure Print
+         (Node : WACC.Assembly.Function_Definition_Node);
+
       File : WACC.IO.Writer;
 
       procedure Indent is

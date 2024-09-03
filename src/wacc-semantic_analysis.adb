@@ -18,6 +18,45 @@ package body WACC.Semantic_Analysis is
 
    subtype Variable_Map is Identifier_Entry_Maps.Map;
 
+   procedure Copy_Variable_Map
+      (From : Variable_Map;
+       To   : out Variable_Map);
+   procedure Resolve_Block
+      (Tree : in out WACC.AST.Block_Node;
+       Vars : in out Variable_Map);
+   procedure Resolve_Expression
+      (Exp  : in out WACC.AST.Exp_Node;
+       Vars : Variable_Map);
+   procedure Resolve_Variable_Declaration
+      (Decl : in out WACC.AST.Variable_Declaration_Node;
+       Vars : in out Variable_Map);
+   procedure Resolve_Function_Declaration
+      (Decl : in out WACC.AST.Function_Declaration_Node;
+       Vars : in out Variable_Map);
+   procedure Resolve_Declaration
+      (Decl : in out WACC.AST.Declaration_Node;
+       Vars : in out Variable_Map);
+   procedure Resolve_Optional_Exp
+      (Tree : WACC.AST.Any_Exp_Node;
+       Vars : Variable_Map);
+   procedure Resolve_For_Init
+      (Tree : in out WACC.AST.For_Init_Node;
+       Vars : in out Variable_Map);
+   procedure Resolve_Statement
+      (Tree : in out WACC.AST.Statement_Node;
+       Vars : Variable_Map);
+   procedure Resolve_Block_Item
+      (Tree : in out WACC.AST.Block_Item_Node;
+       Vars : in out Variable_Map);
+   procedure Label_Statement
+      (Tree  : in out WACC.AST.Statement_Node;
+       Label : in out Identifier);
+   procedure Label_Block_Item
+      (Tree  : in out WACC.AST.Block_Item_Node;
+       Label : in out Identifier);
+   procedure Analyze
+      (Tree : in out WACC.AST.Function_Declaration_Node);
+
    --  Copy a map, setting From_Current_Block := False; for all elements.
    procedure Copy_Variable_Map
       (From : Variable_Map;
@@ -33,10 +72,6 @@ package body WACC.Semantic_Analysis is
          end;
       end loop;
    end Copy_Variable_Map;
-
-   procedure Resolve_Block
-      (Tree : in out WACC.AST.Block_Node;
-       Vars : in out Variable_Map);
 
    procedure Resolve_Expression
       (Exp  : in out WACC.AST.Exp_Node;

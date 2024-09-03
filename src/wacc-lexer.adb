@@ -10,6 +10,14 @@ package body WACC.Lexer is
       File : IO.Reader;
 
       procedure Add_Single
+         (Typ : Token_Type);
+      procedure Lex_Identifier;
+      procedure Lex_Integer;
+      function Match
+         (Str : String)
+         return Boolean;
+
+      procedure Add_Single
          (Typ : Token_Type)
       is
          T : constant Token := (Typ => Typ, others => <>);

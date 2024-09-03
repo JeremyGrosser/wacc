@@ -5,6 +5,33 @@ package body WACC.AST is
    Indent_Level : Natural := 0;
 
    procedure Log
+      (Str : String);
+   procedure Indent;
+   procedure Dedent;
+   procedure Print
+      (This : Declaration_Node);
+   procedure Print
+      (This : Function_Declaration_Node);
+   procedure Print
+      (This : Variable_Declaration_Node);
+   procedure Print
+      (This : Block_Item_Node);
+   procedure Print
+      (This : Block_Node);
+   procedure Print
+      (This : Statement_Node);
+   procedure Print
+      (This : Exp_Node);
+   procedure Print
+      (This : For_Init_Node);
+   procedure Print
+      (This : Unary_Operator_Node);
+   procedure Print
+      (This : Binary_Operator_Node);
+   procedure Print
+      (This : Identifier);
+
+   procedure Log
       (Str : String)
    is
       use Ada.Text_IO;
@@ -25,27 +52,6 @@ package body WACC.AST is
    begin
       Indent_Level := Indent_Level - 1;
    end Dedent;
-
-   procedure Print
-      (This : Declaration_Node);
-   procedure Print
-      (This : Function_Declaration_Node);
-   procedure Print
-      (This : Variable_Declaration_Node);
-   procedure Print
-      (This : Block_Item_Node);
-   procedure Print
-      (This : Block_Node);
-   procedure Print
-      (This : Statement_Node);
-   procedure Print
-      (This : Exp_Node);
-   procedure Print
-      (This : Unary_Operator_Node);
-   procedure Print
-      (This : Binary_Operator_Node);
-   procedure Print
-      (This : Identifier);
 
    procedure Print
       (This : Identifier)

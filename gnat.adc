@@ -5,3 +5,4 @@ pragma Restrictions (No_Implicit_Heap_Allocations);
 pragma Initialize_Scalars;
 
 pragma Assertion_Policy (Check);
+pragma Style_Checks ("s"); --  subprogram body must come after spec

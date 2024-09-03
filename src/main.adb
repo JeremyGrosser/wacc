@@ -19,6 +19,18 @@ with WACC.Assembly;
 procedure Main is
    package CLI renames Ada.Command_Line;
 
+   type Compile_Stage is (Lex, Parse, Validate, Tacky, Codegen, Object, Link);
+
+   procedure Exec
+      (Cmd : AAA.Strings.Vector);
+   procedure Preprocess
+      (Input_File, Preprocessed_File : String);
+   procedure Compile
+      (Preprocessed_File, Assembly_File : String;
+       Stage : Compile_Stage);
+   procedure Assemble
+      (Assembly_File, Object_File : String);
+
    procedure Exec
       (Cmd : AAA.Strings.Vector)
    is
@@ -45,8 +57,6 @@ procedure Main is
       Exec (AAA.Strings.Empty_Vector &
          "gcc" & "-E" & "-P" & Input_File & "-o" & Preprocessed_File);
    end Preprocess;
-
-   type Compile_Stage is (Lex, Parse, Validate, Tacky, Codegen, Object, Link);
 
    procedure Compile
       (Preprocessed_File, Assembly_File : String;

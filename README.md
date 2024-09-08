@@ -217,3 +217,35 @@ of the assembly output, it does this correctly, but I'm not certain. If the
 label the `goto` is jumping to is indeed in the wrong place, I think I need to
 add a new fixup pass in the assembly stage that moves the label if it precedes
 a `For_Init_Node`. I'm not certain this is the right approach though.
+
+## Chapter 9: Functions
+This chapter starts with renaming some of the AST nodes. I took this as an
+opportunity to do some more significant refactoring and cleanup. I added
+forward declarations for all of the AST types, parsing, and semantic analysis
+functions. I had been adding the forward declarations only where needed, but
+this requires careful ordering of the subprogram bodies and it was starting to
+get hard to keep track of. I now understand why forward declarations are
+required by the GNAT-mode style checks.
+
+The AST refactoring has left me wishing I had defined more of an interface to
+the data structure, rather than exposing the raw type definitions. If I had
+done that, I wouldn't have needed to modify every subprogram that manipulates
+the AST. Looking at some other mature compiler implementations, I can see that
+the AST API is quite well abstracted. I doubt I'll be making such a large
+change at this stage, but I'll definitely remember this for my next compiler
+project.
+
+Once again, this chapter has me implementing surprising parts of the C
+standard. A lot of things, like nested function declarations, feel like they
+weren't really intentional language design decisions but were rules reverse
+engineered from the behavior of an existing compiler. I wonder if there's any
+written history about how C evolved. I'm a bit spoiled by Ada's extensive
+documentation, especially around the early design decisions.
+
+My progress has slowed down quite a bit, as I've gotten pulled into other
+projects- the new RP2350 is a particularly interesting ball of yarn to play
+with.
+
+The weather in Seattle has been exceptional this summer so I've been spending
+more time outside too. I expect to have more time for the compiler when it
+starts raining in a few months.

@@ -80,9 +80,6 @@ package body WACC.Semantic_Analysis is
       (Tree : in out WACC.AST.Block_Item_Node);
    procedure Typecheck_Block
       (Tree : in out WACC.AST.Block_Node);
-   procedure Analyze
-      (Tree : in out WACC.AST.Function_Declaration_Node;
-       Vars : in out Identifier_Map);
 
    --  Copy a map, setting From_Current_Scope := False; for all elements.
    procedure Copy_Identifier_Map
@@ -181,15 +178,13 @@ package body WACC.Semantic_Analysis is
        Vars : in out Identifier_Map)
    is
       use type WACC.AST.Any_Block_Node;
+      Prev_Entry : Map_Entry;
    begin
       if Contains (Vars, Decl.Name) then
-         declare
-            Prev_Entry : constant Map_Entry := Element (Vars, Decl.Name);
-         begin
-            if Prev_Entry.From_Current_Scope and then not Prev_Entry.Has_Linkage then
-               raise Semantic_Error with "Duplicate declaration";
-            end if;
-         end;
+         Prev_Entry := Element (Vars, Decl.Name);
+         if Prev_Entry.From_Current_Scope and then not Prev_Entry.Has_Linkage then
+            raise Semantic_Error with "Duplicate declaration";
+         end if;
       end if;
 
       Include (Vars, Decl.Name, Map_Entry'
@@ -215,10 +210,15 @@ package body WACC.Semantic_Analysis is
       (Decl : in out WACC.AST.Declaration_Node;
        Vars : in out Identifier_Map)
    is
+      use type WACC.AST.Any_Block_Node;
    begin
       case Decl.Typ is
          when WACC.AST.N_FunDecl =>
-            Resolve_Function_Declaration (Decl.Function_Declaration.all, Vars);
+            if Decl.Function_Declaration.FBody /= null then
+               raise Semantic_Error with "Nested function definitions not allowed.";
+            else
+               Resolve_Function_Declaration (Decl.Function_Declaration.all, Vars);
+            end if;
          when WACC.AST.N_VarDecl =>
             Resolve_Variable_Declaration (Decl.Variable_Declaration.all, Vars);
       end case;
@@ -567,36 +567,18 @@ package body WACC.Semantic_Analysis is
    end Typecheck_Block;
 
    procedure Analyze
-      (Tree : in out WACC.AST.Function_Declaration_Node;
-       Vars : in out Identifier_Map)
-   is
-      use type WACC.AST.Any_Block_Node;
-      Local_Vars : Identifier_Map;
-      Label : Identifier := Null_Identifier;
-   begin
-      Include (Vars, Tree.Name, Map_Entry'
-         (New_Name            => Tree.Name,
-          From_Current_Scope  => False,
-          Has_Linkage         => True));
-
-      Copy_Identifier_Map (Vars, Local_Vars);
-      for Param of Tree.Params loop
-         Resolve_Param (Param, Local_Vars);
-      end loop;
-      if Tree.FBody /= null then
-         Resolve_Block (Tree.FBody.all, Local_Vars);
-         Label_Block (Tree.FBody.all, Label);
-      end if;
-   end Analyze;
-
-   procedure Analyze
       (Tree : in out WACC.AST.Program_Node)
    is
-      Vars : Identifier_Map := Identifier_Entry_Maps.Empty_Map;
+      use type WACC.AST.Any_Block_Node;
+      Vars  : Identifier_Map := Identifier_Entry_Maps.Empty_Map;
+      Label : Identifier := Null_Identifier;
    begin
       for Decl of Tree.Function_Declarations loop
-         Analyze (Decl.all, Vars);
+         Resolve_Function_Declaration (Decl.all, Vars);
          Typecheck_Function_Declaration (Decl.all);
+         if Decl.FBody /= null then
+            Label_Block (Decl.FBody.all, Label);
+         end if;
       end loop;
    end Analyze;
 

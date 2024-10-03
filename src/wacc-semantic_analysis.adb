@@ -62,8 +62,20 @@ package body WACC.Semantic_Analysis is
    procedure Label_Block_Item
       (Tree  : in out WACC.AST.Block_Item_Node;
        Label : in out Identifier);
+   procedure Typecheck_Exp
+      (Exp : in out WACC.AST.Exp_Node);
+   procedure Typecheck_Optional_Exp
+      (Tree : WACC.AST.Any_Exp_Node);
    procedure Typecheck_Variable_Declaration
       (Decl : in out WACC.AST.Variable_Declaration_Node);
+   procedure Typecheck_Function_Declaration
+      (Decl : in out WACC.AST.Function_Declaration_Node);
+   procedure Typecheck_Declaration
+      (Tree : in out WACC.AST.Declaration_Node);
+   procedure Typecheck_Statement
+      (Tree : in out WACC.AST.Statement_Node);
+   procedure Typecheck_For_Init
+      (Tree : in out WACC.AST.For_Init_Node);
    procedure Typecheck_Block_Item
       (Tree : in out WACC.AST.Block_Item_Node);
    procedure Typecheck_Block
@@ -370,29 +382,176 @@ package body WACC.Semantic_Analysis is
       end loop;
    end Label_Block;
 
+   procedure Typecheck_Exp
+      (Exp : in out WACC.AST.Exp_Node)
+   is
+      use WACC.Symbols;
+      use WACC.AST.Exp_Node_Vectors;
+      use type WACC.AST.Any_Exp_Node;
+      Symbol : Any_Type_Node;
+   begin
+      case Exp.Typ is
+         when WACC.AST.N_Constant =>
+            null;
+         when WACC.AST.N_Var =>
+            Symbol := WACC.Symbols.Get (Symbols, Exp.Name);
+            if Symbol.Typ /= S_Int then
+               raise Semantic_Error with "Function name used as variable";
+            end if;
+         when WACC.AST.N_Unary =>
+            Typecheck_Exp (Exp.Exp.all);
+         when WACC.AST.N_Binary =>
+            Typecheck_Exp (Exp.Left.all);
+            Typecheck_Exp (Exp.Right.all);
+         when WACC.AST.N_Assignment =>
+            Typecheck_Exp (Exp.Assign_Left.all);
+            Typecheck_Exp (Exp.Assign_Right.all);
+         when WACC.AST.N_Conditional =>
+            Typecheck_Exp (Exp.Condition.all);
+            Typecheck_Exp (Exp.If_True.all);
+            if Exp.If_False /= null then
+               Typecheck_Exp (Exp.If_False.all);
+            end if;
+         when WACC.AST.N_Function_Call =>
+            Symbol := WACC.Symbols.Get (Symbols, Exp.Function_Name);
+            if Symbol.Typ = S_Int then
+               raise Semantic_Error with "Variable used as function name";
+            elsif Symbol.Typ = S_FunType and then
+                  Symbol.Param_Count /= Natural (Length (Exp.Args))
+            then
+               raise Semantic_Error with "Function called with wrong number of arguments";
+            end if;
+
+            for Arg of Exp.Args loop
+               Typecheck_Exp (Arg.all);
+            end loop;
+      end case;
+   end Typecheck_Exp;
+
+   procedure Typecheck_Optional_Exp
+      (Tree : WACC.AST.Any_Exp_Node)
+   is
+      use type WACC.AST.Any_Exp_Node;
+   begin
+      if Tree /= null then
+         Typecheck_Exp (Tree.all);
+      end if;
+   end Typecheck_Optional_Exp;
+
    procedure Typecheck_Variable_Declaration
       (Decl : in out WACC.AST.Variable_Declaration_Node)
    is
+      use type WACC.AST.Any_Exp_Node;
       T : constant WACC.Symbols.Type_Node := (Typ => WACC.Symbols.S_Int);
    begin
       WACC.Symbols.Add (Symbols, Decl.Name, T);
+      if Decl.Init /= null then
+         Typecheck_Exp (Decl.Init.all);
+      end if;
    end Typecheck_Variable_Declaration;
+
+   procedure Typecheck_Function_Declaration
+      (Decl : in out WACC.AST.Function_Declaration_Node)
+   is
+      use WACC.Symbols;
+      use WACC.AST.Identifier_Vectors;
+      use type WACC.AST.Any_Block_Node;
+
+      Fun_Type : Type_Node :=
+         (Typ         => S_FunType,
+          Param_Count => Natural (Length (Decl.Params)),
+          Defined     => False);
+      Has_Body : constant Boolean := Decl.FBody /= null;
+      Already_Defined : Boolean := False;
+      Old_Decl : Any_Type_Node;
+   begin
+      if Contains (Symbols, Decl.Name) then
+         Old_Decl := Get (Symbols, Decl.Name);
+         if Old_Decl.Typ /= Fun_Type.Typ or else
+            Old_Decl.Param_Count /= Fun_Type.Param_Count
+         then
+            raise Semantic_Error with "Incompatible function declarations";
+         end if;
+         Already_Defined := Old_Decl.Defined;
+         if Already_Defined and then Has_Body then
+            raise Semantic_Error with "Function is defined more than once";
+         end if;
+      end if;
+
+      Fun_Type.Defined := Already_Defined or else Has_Body;
+      Add (Symbols, Decl.Name, Fun_Type);
+
+      if Has_Body then
+         for Param of Decl.Params loop
+            Add (Symbols, Param, Type_Node'(Typ => S_Int));
+         end loop;
+         Typecheck_Block (Decl.FBody.all);
+      end if;
+   end Typecheck_Function_Declaration;
+
+   procedure Typecheck_Declaration
+      (Tree : in out WACC.AST.Declaration_Node)
+   is
+   begin
+      case Tree.Typ is
+         when WACC.AST.N_VarDecl =>
+            Typecheck_Variable_Declaration (Tree.Variable_Declaration.all);
+         when WACC.AST.N_FunDecl =>
+            Typecheck_Function_Declaration (Tree.Function_Declaration.all);
+      end case;
+   end Typecheck_Declaration;
+
+   procedure Typecheck_Statement
+      (Tree : in out WACC.AST.Statement_Node)
+   is
+      use type WACC.AST.Any_Statement_Node;
+   begin
+      case Tree.Typ is
+         when WACC.AST.N_Return | WACC.AST.N_Expression =>
+            Typecheck_Exp (Tree.Exp.all);
+         when WACC.AST.N_If =>
+            Typecheck_Exp (Tree.Condition.all);
+            Typecheck_Statement (Tree.If_True.all);
+            if Tree.If_False /= null then
+               Typecheck_Statement (Tree.If_False.all);
+            end if;
+         when WACC.AST.N_Compound =>
+            Typecheck_Block (Tree.Block.all);
+         when WACC.AST.N_While | WACC.AST.N_DoWhile =>
+            Typecheck_Exp (Tree.While_Condition.all);
+            Typecheck_Statement (Tree.While_Body.all);
+         when WACC.AST.N_For =>
+            Typecheck_For_Init (Tree.For_Init.all);
+            Typecheck_Optional_Exp (Tree.For_Condition);
+            Typecheck_Optional_Exp (Tree.For_Post);
+            Typecheck_Statement (Tree.For_Body.all);
+         when WACC.AST.N_Break | WACC.AST.N_Continue | WACC.AST.N_Null =>
+            null;
+      end case;
+   end Typecheck_Statement;
+
+   procedure Typecheck_For_Init
+      (Tree : in out WACC.AST.For_Init_Node)
+   is
+   begin
+      case Tree.Typ is
+         when WACC.AST.N_Init_Declaration =>
+            Typecheck_Variable_Declaration (Tree.Decl.all);
+         when WACC.AST.N_Init_Expression =>
+            Typecheck_Optional_Exp (Tree.Exp);
+      end case;
+   end Typecheck_For_Init;
 
    procedure Typecheck_Block_Item
       (Tree : in out WACC.AST.Block_Item_Node)
    is
-      use type WACC.AST.Block_Item_Type;
-      use type WACC.AST.Declaration_Type;
-      use type WACC.AST.Any_Declaration_Node;
-      use type WACC.AST.Any_Variable_Declaration_Node;
    begin
-      if Tree.Typ = WACC.AST.N_Declaration and then
-         Tree.Decl /= null and then
-         Tree.Decl.Typ = WACC.AST.N_VarDecl and then
-         Tree.Decl.Variable_Declaration /= null
-      then
-         Typecheck_Variable_Declaration (Tree.Decl.Variable_Declaration.all);
-      end if;
+      case Tree.Typ is
+         when WACC.AST.N_Statement =>
+            Typecheck_Statement (Tree.Stmt.all);
+         when WACC.AST.N_Declaration =>
+            Typecheck_Declaration (Tree.Decl.all);
+      end case;
    end Typecheck_Block_Item;
 
    procedure Typecheck_Block
@@ -425,7 +584,6 @@ package body WACC.Semantic_Analysis is
          Resolve_Param (Param, Local_Vars);
       end loop;
       if Tree.FBody /= null then
-         Typecheck_Block (Tree.FBody.all);
          Resolve_Block (Tree.FBody.all, Local_Vars);
          Label_Block (Tree.FBody.all, Label);
       end if;
@@ -438,6 +596,7 @@ package body WACC.Semantic_Analysis is
    begin
       for Decl of Tree.Function_Declarations loop
          Analyze (Decl.all, Vars);
+         Typecheck_Function_Declaration (Decl.all);
       end loop;
    end Analyze;
 

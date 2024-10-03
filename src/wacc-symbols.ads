@@ -14,15 +14,28 @@ package WACC.Symbols is
             null;
          when S_FunType =>
             Param_Count : Natural;
+            Defined : Boolean;
       end case;
    end record;
 
    type Table is private;
 
+   Symbol_Error : exception;
+
    procedure Add
       (This : in out Table;
        Name : WACC.Strings.Identifier;
        Node : Type_Node);
+
+   function Get
+      (This : in out Table;
+       Name : WACC.Strings.Identifier)
+       return Any_Type_Node;
+
+   function Contains
+      (This : in out Table;
+       Name : WACC.Strings.Identifier)
+       return Boolean;
 private
    package Type_Maps is new Ada.Containers.Hashed_Maps
       (Key_Type        => WACC.Strings.Identifier,

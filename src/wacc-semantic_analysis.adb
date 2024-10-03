@@ -1,9 +1,12 @@
 pragma Style_Checks ("M120");
 pragma Ada_2022;
 with WACC.Strings; use WACC.Strings;
+with WACC.Symbols;
 with Ada.Containers.Hashed_Maps;
 
 package body WACC.Semantic_Analysis is
+
+   Symbols : WACC.Symbols.Table;
 
    type Map_Entry is record
       New_Name             : Identifier;
@@ -59,6 +62,12 @@ package body WACC.Semantic_Analysis is
    procedure Label_Block_Item
       (Tree  : in out WACC.AST.Block_Item_Node;
        Label : in out Identifier);
+   procedure Typecheck_Variable_Declaration
+      (Decl : in out WACC.AST.Variable_Declaration_Node);
+   procedure Typecheck_Block_Item
+      (Tree : in out WACC.AST.Block_Item_Node);
+   procedure Typecheck_Block
+      (Tree : in out WACC.AST.Block_Node);
    procedure Analyze
       (Tree : in out WACC.AST.Function_Declaration_Node;
        Vars : in out Identifier_Map);
@@ -361,6 +370,43 @@ package body WACC.Semantic_Analysis is
       end loop;
    end Label_Block;
 
+   procedure Typecheck_Variable_Declaration
+      (Decl : in out WACC.AST.Variable_Declaration_Node)
+   is
+      T : constant WACC.Symbols.Type_Node := (Typ => WACC.Symbols.S_Int);
+   begin
+      WACC.Symbols.Add (Symbols, Decl.Name, T);
+   end Typecheck_Variable_Declaration;
+
+   procedure Typecheck_Block_Item
+      (Tree : in out WACC.AST.Block_Item_Node)
+   is
+      use type WACC.AST.Block_Item_Type;
+      use type WACC.AST.Declaration_Type;
+      use type WACC.AST.Any_Declaration_Node;
+      use type WACC.AST.Any_Variable_Declaration_Node;
+   begin
+      if Tree.Typ = WACC.AST.N_Declaration and then
+         Tree.Decl /= null and then
+         Tree.Decl.Typ = WACC.AST.N_VarDecl and then
+         Tree.Decl.Variable_Declaration /= null
+      then
+         Typecheck_Variable_Declaration (Tree.Decl.Variable_Declaration.all);
+      end if;
+   end Typecheck_Block_Item;
+
+   procedure Typecheck_Block
+      (Tree : in out WACC.AST.Block_Node)
+   is
+      use type WACC.AST.Any_Block_Item_Node;
+      Node : WACC.AST.Any_Block_Item_Node := Tree.Head;
+   begin
+      while Node /= null loop
+         Typecheck_Block_Item (Node.all);
+         Node := Node.Next;
+      end loop;
+   end Typecheck_Block;
+
    procedure Analyze
       (Tree : in out WACC.AST.Function_Declaration_Node;
        Vars : in out Identifier_Map)
@@ -379,6 +425,7 @@ package body WACC.Semantic_Analysis is
          Resolve_Param (Param, Local_Vars);
       end loop;
       if Tree.FBody /= null then
+         Typecheck_Block (Tree.FBody.all);
          Resolve_Block (Tree.FBody.all, Local_Vars);
          Label_Block (Tree.FBody.all, Label);
       end if;

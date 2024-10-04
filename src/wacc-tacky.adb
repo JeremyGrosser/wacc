@@ -263,7 +263,21 @@ package body WACC.TACKY is
                   return Dest;
                end;
             when WACC.AST.N_Function_Call =>
-               raise Program_Error with "TODO";
+               declare
+                  FC : constant Any_Instruction_Node := new Instruction_Node'
+                     (Typ      => TA_FunCall,
+                      Fun_Name => Tree.Function_Name,
+                      Args     => Val_Node_Vectors.Empty_Vector,
+                      Dst      => new Val_Node'
+                         (Typ => TA_Var,
+                          Name => Make_Identifier ("function_call_result.")));
+               begin
+                  for Arg of Tree.Args loop
+                     Val_Node_Vectors.Append (FC.Args, Generate (Arg.all, Node));
+                  end loop;
+                  Append (Node, FC);
+                  return FC.Dst;
+               end;
          end case;
       end Generate;
 
@@ -429,8 +443,8 @@ package body WACC.TACKY is
       begin
          case Tree.Typ is
             when WACC.AST.N_FunDecl =>
-               raise Program_Error with "TODO";
-               --  Generate (Tree.Function_Declaration.all);
+               --  Function declarations are discarded during IR generation (p. 182)
+               null;
             when WACC.AST.N_VarDecl =>
                Generate (Tree.Variable_Declaration.all, Node);
          end case;
@@ -479,10 +493,13 @@ package body WACC.TACKY is
                    Int => 0)));
          end if;
       end Generate;
+
+      Def : Any_Function_Definition_Node;
    begin
       for Decl of Tree.Function_Declarations loop
-         Generate (Decl.all, Node.Function_Definition);
-         --  TODO maybe not put every declaration in one TACKY.Function_Definition?
+         Def := new Function_Definition_Node;
+         Generate (Decl.all, Def.all);
+         Function_Definition_Node_Vectors.Append (Node.Function_Definitions, Def);
       end loop;
    end Generate;
 
@@ -619,6 +636,15 @@ package body WACC.TACKY is
             when TA_Label =>
                Write ("Label = ");
                Print (Node.Label);
+            when TA_FunCall =>
+               Write ("Name = ");
+               Print (Node.Fun_Name);
+               Write ("Args = ");
+               for Arg of Node.Args loop
+                  Print (Arg.all);
+               end loop;
+               Write ("Dst = ");
+               Print (Node.Dst.all);
          end case;
          Dedent;
       end Print;
@@ -641,7 +667,9 @@ package body WACC.TACKY is
       Indent;
       Write ("Program_Node");
       Indent;
-      Print (Node.Function_Definition);
+      for Def of Node.Function_Definitions loop
+         Print (Def.all);
+      end loop;
       Dedent;
       Dedent;
    end Print;

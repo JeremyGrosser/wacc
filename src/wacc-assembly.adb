@@ -265,6 +265,8 @@ package body WACC.Assembly is
                Append (Node, new Instruction_Node'
                   (Typ => A_Label,
                    Label => Tree.Label));
+            when WACC.TACKY.TA_FunCall =>
+               raise Program_Error with "TODO";
          end case;
       end Generate;
 
@@ -456,7 +458,9 @@ package body WACC.Assembly is
       end Binop_Fixup;
    begin
       --  Pass 1: TACKY to Assembly
-      Generate (Tree.Function_Definition, Asm.Function_Definition);
+      for Def of Tree.Function_Definitions loop
+         Generate (Def.all, Asm.Function_Definition);
+      end loop;
 
       --  Pass 2: Replacing Pseudoregisters with Stack locations
       Replace_Pseudo (Asm.Function_Definition);

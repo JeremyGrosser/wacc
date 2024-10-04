@@ -1,3 +1,4 @@
+pragma Style_Checks ("M120");
 with Ada.Containers.Vectors;
 with WACC.Strings; use WACC.Strings;
 with WACC.AST;
@@ -18,15 +19,28 @@ package WACC.TACKY is
       (Index_Type   => Positive,
        Element_Type => Any_Instruction_Node);
 
-   --  function_definition = Function(identifier, 1 instruction* body)
-   type Function_Definition_Node is record
-      Name  : Identifier;
-      FBody : Instruction_Node_Vectors.Vector;
-   end record;
+   package Identifier_Vectors is new Ada.Containers.Vectors
+      (Index_Type   => Positive,
+       Element_Type => Identifier);
+
+   package Function_Definition_Node_Vectors is new Ada.Containers.Vectors
+      (Index_Type   => Positive,
+       Element_Type => Any_Function_Definition_Node);
+
+   package Val_Node_Vectors is new Ada.Containers.Vectors
+      (Index_Type   => Positive,
+       Element_Type => Any_Val_Node);
 
    --  program = Program(function_definition)
    type Program_Node is record
-      Function_Definition : Function_Definition_Node;
+      Function_Definitions : Function_Definition_Node_Vectors.Vector;
+   end record;
+
+   --  function_definition = Function(identifier name, identifier* params, instruction* body)
+   type Function_Definition_Node is record
+      Name   : Identifier;
+      Params : Identifier_Vectors.Vector;
+      FBody  : Instruction_Node_Vectors.Vector;
    end record;
 
    --  instruction = Return(val)
@@ -37,6 +51,7 @@ package WACC.TACKY is
    --              | JumpIfZero(val condition, identifier target)
    --              | JumpIfNotZero(val condition, identifier target)
    --              | Label(identifier)
+   --              | FunCall(identifier fun_name, val* args, val dst)
    type Instruction_Node_Type is
       (TA_Return,
        TA_Unary,
@@ -45,7 +60,8 @@ package WACC.TACKY is
        TA_Jump,
        TA_Jump_If_Zero,
        TA_Jump_If_Not_Zero,
-       TA_Label);
+       TA_Label,
+       TA_FunCall);
    type Instruction_Node
       (Typ : Instruction_Node_Type)
    is record
@@ -70,6 +86,10 @@ package WACC.TACKY is
             JNZ_Target : Identifier;
          when TA_Label =>
             Label : Identifier;
+         when TA_FunCall =>
+            Fun_Name : Identifier;
+            Args     : Val_Node_Vectors.Vector;
+            Dst      : Any_Val_Node;
       end case;
    end record;
 

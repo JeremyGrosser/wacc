@@ -170,7 +170,7 @@ begin
    if Is_Empty (Input_File_Args) then
       Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error,
          "Usage: wacc" &
-         " [-c] [--lex] [--parse] [--validate] [--tacky] [--codegen] " &
+         " [-c] [--keep] [--lex] [--parse] [--validate] [--tacky] [--codegen] " &
          "<input file>");
       CLI.Set_Exit_Status (1);
       return;

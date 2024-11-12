@@ -483,8 +483,13 @@ package body WACC.TACKY is
       is
          use type WACC.AST.Any_Block_Node;
       begin
-         Node.Name := Tree.Name;
          if Tree.FBody /= null then
+            Node.Name := Tree.Name;
+
+            for Param of Tree.Params loop
+               Identifier_Vectors.Append (Node.Params, Param);
+            end loop;
+
             Generate (Tree.FBody.all, Node.FBody);
             Instruction_Node_Vectors.Append (Node.FBody, new Instruction_Node'
                (Typ => TA_Return,
@@ -499,7 +504,9 @@ package body WACC.TACKY is
       for Decl of Tree.Function_Declarations loop
          Def := new Function_Definition_Node;
          Generate (Decl.all, Def.all);
-         Function_Definition_Node_Vectors.Append (Node.Function_Definitions, Def);
+         if not Instruction_Node_Vectors.Is_Empty (Def.FBody) then
+            Function_Definition_Node_Vectors.Append (Node.Function_Definitions, Def);
+         end if;
       end loop;
    end Generate;
 

@@ -5,6 +5,14 @@ with WACC.IO;
 
 package body WACC.Assembly is
 
+   --  The first six function arguments are passed in registers, per the C
+   --  calling convention
+   type Argument_Register_Index is range 1 .. 6;
+   Argument_Register : constant array (Argument_Register_Index) of Reg_Node_Type :=
+      (A_DI, A_SI, A_DX, A_CX, A_R8, A_R9);
+
+   type Register_Width is (RW_8, RW_32, RW_64);
+
    function Convert_Operand
       (Tree : WACC.TACKY.Val_Node)
       return WACC.Assembly.Any_Operand_Node;
@@ -266,8 +274,6 @@ package body WACC.Assembly is
                use WACC.TACKY.Val_Node_Vectors;
                use type Ada.Containers.Count_Type;
                Args : WACC.TACKY.Val_Node_Vectors.Vector := Copy (Tree.Args);
-               Arg_Reg : constant array (1 .. 6) of Reg_Node_Type :=
-                  (A_DI, A_SI, A_DX, A_CX, A_R8, A_R9);
                Arg : WACC.TACKY.Any_Val_Node;
                Stack_Padding : Natural := 0;
                Stack_Args : Natural := 0;
@@ -283,7 +289,7 @@ package body WACC.Assembly is
                end if;
 
                --  Save the first six arguments to registers
-               for AR of Arg_Reg loop
+               for AR of Argument_Register loop
                   exit when Is_Empty (Args);
                   Arg := First_Element (Args);
                   Delete_First (Args);
@@ -386,7 +392,9 @@ package body WACC.Assembly is
             Replace_Pseudo (Node.B);
          when A_SetCC =>
             Replace_Pseudo (Node.SetCC_Operand);
-         when A_Cdq | A_Allocate_Stack | A_Deallocate_Stack | A_Push | A_Call |
+         when A_Push =>
+            Replace_Pseudo (Node.Push_Operand);
+         when A_Cdq | A_Allocate_Stack | A_Deallocate_Stack | A_Call |
               A_Ret | A_Jmp | A_JmpCC | A_Label =>
             null;
       end case;
@@ -530,6 +538,24 @@ package body WACC.Assembly is
    begin
       --  Pass 1: TACKY to Assembly
       Asm.Name := Tree.Name;
+
+      --  Copy register passed arguments to the stack
+      declare
+         use Instruction_Node_Vectors;
+         I : Argument_Register_Index := Argument_Register_Index'First;
+      begin
+         for Param of Tree.Params loop
+            Append (Asm.Instructions, new Instruction_Node'
+               (Typ => A_Mov,
+                Src => new Operand_Node'(Typ => A_Reg, Reg => new Reg_Node'(Typ => Argument_Register (I))),
+                Dst => new Operand_Node'
+                  (Typ  => A_Pseudo,
+                   Name => Param)));
+            exit when I = Argument_Register_Index'Last;
+            I := I + 1;
+         end loop;
+      end;
+
       for TACKY_Insn of Tree.FBody loop
          Generate (TACKY_Insn.all, Asm.Instructions);
       end loop;
@@ -766,9 +792,11 @@ package body WACC.Assembly is
          (N : Long_Integer);
       procedure New_Line;
       procedure Print
-         (Node : WACC.Assembly.Reg_Node);
+         (Node  : WACC.Assembly.Reg_Node;
+          Width : Register_Width);
       procedure Print
-         (Node : WACC.Assembly.Operand_Node);
+         (Node  : WACC.Assembly.Operand_Node;
+          Width : Register_Width := RW_32);
       procedure Print
          (Node : WACC.Assembly.Unary_Operator_Node);
       procedure Print
@@ -809,33 +837,71 @@ package body WACC.Assembly is
       end New_Line;
 
       procedure Print
-         (Node : WACC.Assembly.Reg_Node)
+         (Node  : WACC.Assembly.Reg_Node;
+          Width : Register_Width)
       is
       begin
          case Node.Typ is
             when A_AX =>
-               Write ("eax");
+               case Width is
+                  when RW_8  => Write ("al");
+                  when RW_32 => Write ("eax");
+                  when RW_64 => Write ("rax");
+               end case;
             when A_CX =>
-               Write ("ecx");
+               case Width is
+                  when RW_8  => Write ("cl");
+                  when RW_32 => Write ("ecx");
+                  when RW_64 => Write ("rcx");
+               end case;
             when A_DX =>
-               Write ("edx");
+               case Width is
+                  when RW_8  => Write ("dl");
+                  when RW_32 => Write ("edx");
+                  when RW_64 => Write ("rdx");
+               end case;
             when A_DI =>
-               Write ("edi");
+               case Width is
+                  when RW_8  => Write ("dil");
+                  when RW_32 => Write ("edi");
+                  when RW_64 => Write ("rdi");
+               end case;
             when A_SI =>
-               Write ("esi");
+               case Width is
+                  when RW_8  => Write ("sil");
+                  when RW_32 => Write ("esi");
+                  when RW_64 => Write ("rsi");
+               end case;
             when A_R8 =>
-               Write ("r8d");
+               case Width is
+                  when RW_8  => Write ("r8b");
+                  when RW_32 => Write ("r8d");
+                  when RW_64 => Write ("r8");
+               end case;
             when A_R9 =>
-               Write ("r9d");
+               case Width is
+                  when RW_8  => Write ("r9b");
+                  when RW_32 => Write ("r9d");
+                  when RW_64 => Write ("r9");
+               end case;
             when A_R10 =>
-               Write ("r10d");
+               case Width is
+                  when RW_8  => Write ("r10b");
+                  when RW_32 => Write ("r10d");
+                  when RW_64 => Write ("r10");
+               end case;
             when A_R11 =>
-               Write ("r11d");
+               case Width is
+                  when RW_8  => Write ("r11b");
+                  when RW_32 => Write ("r11d");
+                  when RW_64 => Write ("r11");
+               end case;
          end case;
       end Print;
 
       procedure Print
-         (Node : WACC.Assembly.Operand_Node)
+         (Node  : WACC.Assembly.Operand_Node;
+          Width : Register_Width := RW_32)
       is
       begin
          case Node.Typ is
@@ -844,7 +910,7 @@ package body WACC.Assembly is
                Write (Node.Imm_Int);
             when A_Reg =>
                Write ("%");
-               Print (Node.Reg.all);
+               Print (Node.Reg.all, Width);
             when A_Stack =>
                Write (Long_Integer (Node.Stack_Int));
                Write ("(%rbp)");
@@ -943,7 +1009,7 @@ package body WACC.Assembly is
                Write ("set");
                Print (Node.SetCC_Condition);
                Write (" ");
-               Print (Node.SetCC_Operand.all);
+               Print (Node.SetCC_Operand.all, Width => RW_8);
             when A_Label =>
                New_Line;
                Write (".L");
@@ -960,10 +1026,11 @@ package body WACC.Assembly is
                Write (", %rsp");
             when A_Push =>
                Write ("pushq ");
-               Print (Node.Push_Operand.all);
+               Print (Node.Push_Operand.all, Width => RW_64);
             when A_Call =>
                Write ("call ");
                Print (Node.Call_Name);
+               Write ("@PLT");
             when A_Ret =>
                Write ("movq %rbp, %rsp");
                New_Line;
@@ -1010,7 +1077,8 @@ package body WACC.Assembly is
       end loop;
 
       Indent;
-      Write (".section .node.GNU-stack,"""",@progbits");
+      Write (".section .note.GNU-stack,"""",@progbits");
+      New_Line;
       New_Line;
 
       WACC.IO.Close (File);

@@ -542,17 +542,32 @@ package body WACC.Assembly is
       --  Copy register passed arguments to the stack
       declare
          use Instruction_Node_Vectors;
-         I : Argument_Register_Index := Argument_Register_Index'First;
+         use WACC.TACKY.Identifier_Vectors;
+         Params : WACC.TACKY.Identifier_Vectors.Vector := Copy (Tree.Params);
+         Offset : Stack_Offset := -16;
       begin
-         for Param of Tree.Params loop
+         for AR of Argument_Register loop
+            exit when Is_Empty (Params);
             Append (Asm.Instructions, new Instruction_Node'
                (Typ => A_Mov,
-                Src => new Operand_Node'(Typ => A_Reg, Reg => new Reg_Node'(Typ => Argument_Register (I))),
+                Src => new Operand_Node'(Typ => A_Reg, Reg => new Reg_Node'(Typ => AR)),
                 Dst => new Operand_Node'
                   (Typ  => A_Pseudo,
-                   Name => Param)));
-            exit when I = Argument_Register_Index'Last;
-            I := I + 1;
+                   Name => First_Element (Params))));
+            Delete_First (Params);
+         end loop;
+
+         while not Is_Empty (Params) loop
+            Append (Asm.Instructions, new Instruction_Node'
+               (Typ => A_Mov,
+                Src => new Operand_Node'
+                  (Typ       => A_Stack,
+                   Stack_Int => Offset),
+                Dst => new Operand_Node'
+                  (Typ  => A_Pseudo,
+                   Name => First_Element (Params))));
+            Delete_First (Params);
+            Offset := Offset - 8;
          end loop;
       end;
 

@@ -1,0 +1,17 @@
+module Test {
+
+stm = Compound(stm, stm)
+    | Assign(identifier, exp)
+    | Print(exp_list)
+
+real = (int mantissa, int exp)
+
+exp_list = ExpList(exp, exp_list) | Nil
+exp      = Id(identifier, string? m)
+         | Num(int*)
+         | Op(exp, binop, exp)
+           attributes (real? value)
+
+binop = Plus | Minus | Times | Div
+
+}

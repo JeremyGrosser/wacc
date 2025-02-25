@@ -178,18 +178,7 @@ package body ASDL.Codegen is
       function Field_Type
          (F : ASDL.Parser.ASDL_Field)
          return Unbounded_String
-      is
-      begin
-         if F.Name = "int" then
-            return To_Unbounded_String ("Integer");
-         elsif F.Name = "string" then
-            return To_Unbounded_String ("String");
-         elsif F.Name = "identifier" then
-            return To_Unbounded_String ("Identifier");
-         else
-            return F.Name;
-         end if;
-      end Field_Type;
+      is (F.Name);
 
    begin
       for Field of Fields loop
@@ -242,6 +231,8 @@ package body ASDL.Codegen is
 
       New_Line;
       Put ("subtype Identifier is String;");
+      New_Line;
+      Put ("subtype Int is Integer;");
       New_Line;
 
       for A_Enum of P.Enums loop

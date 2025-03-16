@@ -19,6 +19,9 @@ package body WACC.Assembly is
    function Convert_Condition
       (Op : WACC.TACKY.Binary_Operator_Node)
       return WACC.Assembly.Condition_Code;
+   procedure Generate_Function_Call
+      (Tree : WACC.TACKY.Instruction_Node;
+       Node : in out WACC.Assembly.Instruction_Node_Vectors.Vector);
    procedure Generate_Unary_Operation
       (Tree : WACC.TACKY.Instruction_Node;
        Node : in out WACC.Assembly.Instruction_Node_Vectors.Vector);
@@ -46,7 +49,7 @@ package body WACC.Assembly is
       (Key_Type     => String,
        Element_Type => Stack_Offset);
    Pseudo_Map : Stack_Maps.Map := Stack_Maps.Empty_Map;
-   Next_Stack_Offset : Stack_Offset := Stack_Offset'Last;
+   Next_Stack_Offset : Stack_Offset;
 
    function Convert_Operand
       (Tree : WACC.TACKY.Val_Node)
@@ -217,6 +220,96 @@ package body WACC.Assembly is
       end case;
    end Generate_Binary_Operation;
 
+   procedure Generate_Function_Call
+      (Tree : WACC.TACKY.Instruction_Node;
+       Node : in out WACC.Assembly.Instruction_Node_Vectors.Vector)
+   is
+      use WACC.TACKY.Val_Node_Vectors;
+      use type Ada.Containers.Count_Type;
+      Register_Args, Stack_Args : WACC.TACKY.Val_Node_Vectors.Vector;
+      Arg : WACC.TACKY.Any_Val_Node;
+      Stack_Padding : Natural := 0;
+      I : Positive := 1;
+   begin
+      for Arg of Tree.Args loop
+         if I <= 6 then
+            Append (Register_Args, Arg);
+         else
+            Prepend (Stack_Args, Arg);
+         end if;
+         I := I + 1;
+      end loop;
+
+      --  Align stack
+      if (Length (Stack_Args) mod 2) /= 0 then
+         Stack_Padding := 8;
+         Instruction_Node_Vectors.Append (Node, new Instruction_Node'
+            (Typ        => A_Allocate_Stack,
+             Stack_Size => Stack_Padding));
+      end if;
+
+      --  Save the first six arguments to registers
+      for AR of Argument_Register loop
+         exit when Is_Empty (Register_Args);
+         Arg := First_Element (Register_Args);
+         Delete_First (Register_Args);
+         Instruction_Node_Vectors.Append (Node, new Instruction_Node'
+            (Typ => A_Mov,
+             Src => Convert_Operand (Arg.all),
+             Dst => new Operand_Node'
+               (Typ => A_Reg,
+                Reg => new Reg_Node'(Typ => AR))));
+      end loop;
+
+      --  Push remaining arguments to stack in reverse order
+      while not Is_Empty (Stack_Args) loop
+         Arg := First_Element (Stack_Args);
+         Delete_First (Stack_Args);
+         declare
+            Operand : constant Any_Operand_Node := Convert_Operand (Arg.all);
+         begin
+            if Operand.Typ = A_Imm then
+               Instruction_Node_Vectors.Append (Node, new Instruction_Node'
+                  (Typ => A_Push,
+                   Push_Operand => Convert_Operand (Arg.all)));
+            else
+               Instruction_Node_Vectors.Append (Node, new Instruction_Node'
+                  (Typ => A_Mov,
+                   Src => Operand,
+                   Dst => new Operand_Node'(Typ => A_Reg, Reg => new Reg_Node'(Typ => A_AX))));
+               Instruction_Node_Vectors.Append (Node, new Instruction_Node'
+                  (Typ => A_Push,
+                   Push_Operand => new Operand_Node'(Typ => A_Reg, Reg => new Reg_Node'(Typ => A_AX))));
+            end if;
+         end;
+      end loop;
+
+      --  Call
+      Instruction_Node_Vectors.Append (Node, new Instruction_Node'
+         (Typ => A_Call,
+          Call_Name => Tree.Fun_Name));
+
+      --  Restore the stack
+      declare
+         Bytes_To_Remove : constant Natural :=
+            8 * Natural (Length (Stack_Args)) + Stack_Padding;
+      begin
+         if Bytes_To_Remove > 0 then
+            Instruction_Node_Vectors.Append (Node, new Instruction_Node'
+               (Typ => A_Deallocate_Stack,
+                Stack_Size => Bytes_To_Remove));
+         end if;
+      end;
+
+      --  Pop return value
+      Instruction_Node_Vectors.Append (Node, new Instruction_Node'
+         (Typ => A_Mov,
+          Src => new Operand_Node'
+            (Typ => A_Reg,
+             Reg => new Reg_Node'(Typ => A_AX)),
+          Dst => Convert_Operand (Tree.Dst.all)));
+   end Generate_Function_Call;
+
    procedure Generate
       (Tree : WACC.TACKY.Instruction_Node;
        Node : in out WACC.Assembly.Instruction_Node_Vectors.Vector)
@@ -270,85 +363,7 @@ package body WACC.Assembly is
                (Typ => A_Label,
                 Label => Tree.Label));
          when WACC.TACKY.TA_FunCall =>
-            declare
-               use WACC.TACKY.Val_Node_Vectors;
-               use type Ada.Containers.Count_Type;
-               Args : WACC.TACKY.Val_Node_Vectors.Vector := Copy (Tree.Args);
-               Arg : WACC.TACKY.Any_Val_Node;
-               Stack_Padding : Natural := 0;
-               Stack_Args : Natural := 0;
-            begin
-               --  Save caller arguments
-
-               --  Align stack
-               if Length (Args) mod 2 /= 0 then
-                  Stack_Padding := 8;
-                  Append (Node, new Instruction_Node'
-                     (Typ        => A_Allocate_Stack,
-                      Stack_Size => Stack_Padding));
-               end if;
-
-               --  Save the first six arguments to registers
-               for AR of Argument_Register loop
-                  exit when Is_Empty (Args);
-                  Arg := First_Element (Args);
-                  Delete_First (Args);
-                  Append (Node, new Instruction_Node'
-                     (Typ => A_Mov,
-                      Src => Convert_Operand (Arg.all),
-                      Dst => new Operand_Node'
-                        (Typ => A_Reg,
-                         Reg => new Reg_Node'(Typ => AR))));
-               end loop;
-
-               --  Push remaining arguments to stack in reverse order
-               while not Is_Empty (Args) loop
-                  Arg := Last_Element (Args);
-                  Delete_Last (Args);
-                  declare
-                     Operand : constant Any_Operand_Node := Convert_Operand (Arg.all);
-                  begin
-                     if Operand.Typ = A_Imm or else Operand.Typ = A_Reg then
-                        Append (Node, new Instruction_Node'
-                           (Typ => A_Push,
-                            Push_Operand => Convert_Operand (Arg.all)));
-                     else
-                        Append (Node, new Instruction_Node'
-                           (Typ => A_Mov,
-                            Src => Operand,
-                            Dst => new Operand_Node'(Typ => A_Reg, Reg => new Reg_Node'(Typ => A_AX))));
-                        Append (Node, new Instruction_Node'
-                           (Typ => A_Push,
-                            Push_Operand => new Operand_Node'(Typ => A_Reg, Reg => new Reg_Node'(Typ => A_AX))));
-                     end if;
-                     Stack_Args := Stack_Args + 1;
-                  end;
-               end loop;
-
-               --  Call
-               Append (Node, new Instruction_Node'
-                  (Typ => A_Call,
-                   Call_Name => Tree.Fun_Name));
-
-               --  Restore the stack
-               declare
-                  Bytes_To_Remove : constant Natural := 8 * Stack_Args + Stack_Padding;
-               begin
-                  if Bytes_To_Remove > 0 then
-                     Append (Node, new Instruction_Node'
-                        (Typ => A_Deallocate_Stack,
-                         Stack_Size => Bytes_To_Remove));
-                  end if;
-               end;
-
-               --  Pop return value
-               Append (Node, new Instruction_Node'
-                  (Typ => A_Mov,
-                   Src => new Operand_Node'
-                     (Typ => A_Reg,
-                      Reg => new Reg_Node'(Typ => A_AX)),
-                   Dst => Convert_Operand (Tree.Dst.all)));
-            end;
+            Generate_Function_Call (Tree, Node);
       end case;
    end Generate;
 
@@ -362,8 +377,8 @@ package body WACC.Assembly is
             Name : constant String := To_String (Node.Name);
          begin
             if not Contains (Pseudo_Map, Name) then
-               Insert (Pseudo_Map, Name, Next_Stack_Offset);
                Next_Stack_Offset := Next_Stack_Offset - 4;
+               Insert (Pseudo_Map, Name, Next_Stack_Offset);
             end if;
             Node := new Operand_Node'
                (Typ => A_Stack,
@@ -456,7 +471,7 @@ package body WACC.Assembly is
 
       Prepend (Node.Instructions, new Instruction_Node'
          (Typ => A_Allocate_Stack,
-          Stack_Size => abs Integer (Next_Stack_Offset - 4)));
+          Stack_Size => abs Integer (Next_Stack_Offset)));
    end Stack_Fixup;
 
    procedure Binop_Fixup
@@ -536,6 +551,9 @@ package body WACC.Assembly is
        Asm  : out WACC.Assembly.Function_Definition_Node)
    is
    begin
+      Next_Stack_Offset := 0;
+      Stack_Maps.Clear (Pseudo_Map);
+
       --  Pass 1: TACKY to Assembly
       Asm.Name := Tree.Name;
 
@@ -544,7 +562,7 @@ package body WACC.Assembly is
          use Instruction_Node_Vectors;
          use WACC.TACKY.Identifier_Vectors;
          Params : WACC.TACKY.Identifier_Vectors.Vector := Copy (Tree.Params);
-         Offset : Stack_Offset := -16;
+         Offset : Stack_Offset := 16;
       begin
          for AR of Argument_Register loop
             exit when Is_Empty (Params);
@@ -567,7 +585,7 @@ package body WACC.Assembly is
                   (Typ  => A_Pseudo,
                    Name => First_Element (Params))));
             Delete_First (Params);
-            Offset := Offset - 8;
+            Offset := Offset + 8;
          end loop;
       end;
 

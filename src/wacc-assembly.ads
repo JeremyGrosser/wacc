@@ -22,7 +22,7 @@ package WACC.Assembly is
 
    Assembly_Error : exception;
 
-   type Stack_Offset is new Integer range Integer'First .. -4;
+   type Stack_Offset is new Integer;
 
    package Instruction_Node_Vectors is new Ada.Containers.Vectors
       (Index_Type   => Natural,

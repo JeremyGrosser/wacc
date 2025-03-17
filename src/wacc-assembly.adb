@@ -262,9 +262,7 @@ package body WACC.Assembly is
       end loop;
 
       --  Push remaining arguments to stack in reverse order
-      while not Is_Empty (Stack_Args) loop
-         Arg := First_Element (Stack_Args);
-         Delete_First (Stack_Args);
+      for Arg of Stack_Args loop
          declare
             Operand : constant Any_Operand_Node := Convert_Operand (Arg.all);
          begin

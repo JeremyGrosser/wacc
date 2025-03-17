@@ -249,3 +249,20 @@ with.
 The weather in Seattle has been exceptional this summer so I've been spending
 more time outside too. I expect to have more time for the compiler when it
 starts raining in a few months.
+
+_several months later_
+
+After much procrastination, I started looking at Chapter 9 again. I spent a lot
+of time trying to figure out why my compiler wasn't calculating stack offsets
+in function calls correctly. I didn't make much progress until I just deleted
+the FunCall codegen and started over. I carefully followed the algorithm from
+the OCaml and Python
+[implementations](https://github.com/nlsandler/c-compiler-implementations).
+
+That still didn't work, so I ended up comparing my compiler's assembly output
+to the OCaml reference compiler's output line by line. I thought I was clever
+defining `type Stack_Offset is range Integer'First .. -4;` and subtracting
+offsets. This only led to confusion, so I went back to using a `Natural`
+subtype. After many test/compile/compare iterations, I got my assembly close
+enough to the reference and passed the tests, but comparing assembly listings
+is not a fun way to debug. I would like to avoid doing that again.

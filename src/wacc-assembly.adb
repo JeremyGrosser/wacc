@@ -469,7 +469,7 @@ package body WACC.Assembly is
 
       Prepend (Node.Instructions, new Instruction_Node'
          (Typ => A_Allocate_Stack,
-          Stack_Size => abs Integer (Next_Stack_Offset)));
+          Stack_Size => (abs Integer (Next_Stack_Offset)) + 4));
    end Stack_Fixup;
 
    procedure Binop_Fixup

@@ -21,6 +21,8 @@ is
        T_for,
        T_break,
        T_continue,
+       T_static,
+       T_extern,
        T_Open_Paren,
        T_Close_Paren,
        T_Open_Brace,

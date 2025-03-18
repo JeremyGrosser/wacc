@@ -83,6 +83,10 @@ package body WACC.Lexer is
             T.Typ := T_break;
          elsif T.Literal = "continue" then
             T.Typ := T_continue;
+         elsif T.Literal = "static" then
+            T.Typ := T_static;
+         elsif T.Literal = "extern" then
+            T.Typ := T_extern;
          end if;
 
          Token_Vectors.Append (Tokens, T);

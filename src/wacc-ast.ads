@@ -12,6 +12,8 @@ is
    type Any_Function_Declaration_Node is access Function_Declaration_Node;
    type Variable_Declaration_Node;
    type Any_Variable_Declaration_Node is access Variable_Declaration_Node;
+   type Storage_Class_Node;
+   type Any_Storage_Class_Node is access Storage_Class_Node;
    type Block_Item_Node;
    type Any_Block_Item_Node is access Block_Item_Node;
    type Block_Node;
@@ -35,13 +37,13 @@ is
       (Index_Type   => Natural,
        Element_Type => Any_Exp_Node);
 
-   package Function_Declaration_Vectors is new Ada.Containers.Vectors
+   package Declaration_Vectors is new Ada.Containers.Vectors
       (Index_Type   => Positive,
-       Element_Type => Any_Function_Declaration_Node);
+       Element_Type => Any_Declaration_Node);
 
-   --  program = Program(function_declaration*)
+   --  program = Program(declaration*)
    type Program_Node is record
-      Function_Declarations : Function_Declaration_Vectors.Vector;
+      Declarations : Declaration_Vectors.Vector;
    end record;
 
    --  declaration = FunDecl(function_declaration) | VarDecl(variable_declaration)
@@ -57,18 +59,26 @@ is
       end case;
    end record;
 
-   --  variable_declaration = (identifier name, exp? int)
+   --  variable_declaration = (identifier name, exp? int, storage_class?)
    type Variable_Declaration_Node is record
       Name : Identifier;
       Init : Any_Exp_Node;
+      Storage_Class : Any_Storage_Class_Node;
    end record;
 
-   --  function_declaration = (identifier name, identifier* params, block? body)
+   --  function_declaration = (identifier name, identifier* params, block? body, storage_class?)
    type Function_Declaration_Node is record
       Name   : Identifier;
       Params : Identifier_Vectors.Vector;
       FBody  : Any_Block_Node;
+      Storage_Class : Any_Storage_Class_Node;
    end record;
+
+   --  storage_class = Static | Extern
+   type Storage_Class_Type is (Static, Extern);
+   type Storage_Class_Node
+      (Typ : Storage_Class_Type)
+   is null record;
 
    --  block_item = statement | declaration
    type Block_Item_Type is

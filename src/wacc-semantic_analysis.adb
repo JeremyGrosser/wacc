@@ -573,12 +573,18 @@ package body WACC.Semantic_Analysis is
       Vars  : Identifier_Map := Identifier_Entry_Maps.Empty_Map;
       Label : Identifier := Null_Identifier;
    begin
-      for Decl of Tree.Function_Declarations loop
-         Resolve_Function_Declaration (Decl.all, Vars);
-         Typecheck_Function_Declaration (Decl.all);
-         if Decl.FBody /= null then
-            Label_Block (Decl.FBody.all, Label);
-         end if;
+      for Decl of Tree.Declarations loop
+         case Decl.Typ is
+            when WACC.AST.N_FunDecl =>
+               Resolve_Function_Declaration (Decl.Function_Declaration.all, Vars);
+               Typecheck_Function_Declaration (Decl.Function_Declaration.all);
+               if Decl.Function_Declaration.FBody /= null then
+                  Label_Block (Decl.Function_Declaration.FBody.all, Label);
+               end if;
+            when WACC.AST.N_VarDecl =>
+               Resolve_Variable_Declaration (Decl.Variable_Declaration.all, Vars);
+               Typecheck_Variable_Declaration (Decl.Variable_Declaration.all);
+         end case;
       end loop;
    end Analyze;
 

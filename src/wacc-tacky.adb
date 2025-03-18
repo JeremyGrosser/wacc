@@ -501,12 +501,17 @@ package body WACC.TACKY is
 
       Def : Any_Function_Definition_Node;
    begin
-      for Decl of Tree.Function_Declarations loop
-         Def := new Function_Definition_Node;
-         Generate (Decl.all, Def.all);
-         if not Instruction_Node_Vectors.Is_Empty (Def.FBody) then
-            Function_Definition_Node_Vectors.Append (Node.Function_Definitions, Def);
-         end if;
+      for Decl of Tree.Declarations loop
+         case Decl.Typ is
+            when WACC.AST.N_FunDecl =>
+               Def := new Function_Definition_Node;
+               Generate (Decl.Function_Declaration.all, Def.all);
+               if not Instruction_Node_Vectors.Is_Empty (Def.FBody) then
+                  Function_Definition_Node_Vectors.Append (Node.Function_Definitions, Def);
+               end if;
+            when WACC.AST.N_VarDecl =>
+               raise Program_Error with "TODO";
+         end case;
       end loop;
    end Generate;
 

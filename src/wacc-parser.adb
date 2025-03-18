@@ -22,6 +22,8 @@ package body WACC.Parser is
          (Node : out WACC.AST.Any_Variable_Declaration_Node);
       procedure Parse_Function_Declaration
          (Node : out WACC.AST.Any_Function_Declaration_Node);
+      procedure Parse_Specifiers
+         (Storage_Class : out WACC.AST.Any_Storage_Class_Node); -- TODO: output decl type other than int
       procedure Parse_Param_List
          (Node : in out WACC.AST.Identifier_Vectors.Vector);
       procedure Parse_Block
@@ -316,18 +318,26 @@ package body WACC.Parser is
       procedure Parse_For_Init
          (Node : out WACC.AST.Any_For_Init_Node)
       is
+         use type WACC.AST.Declaration_Type;
+         Decl : WACC.AST.Any_Declaration_Node;
       begin
-         if Next_Token.Typ = WACC.Lexer.T_int then
-            Node := new WACC.AST.For_Init_Node'
-               (Typ  => WACC.AST.N_Init_Declaration,
-                Decl => null);
-            Parse_Variable_Declaration (Node.Decl);
-         else
-            Node := new WACC.AST.For_Init_Node'
-               (Typ => WACC.AST.N_Init_Expression,
-                Exp => null);
-            Parse_Optional_Exp (Node.Exp, WACC.Lexer.T_Semicolon);
-         end if;
+         case Next_Token.Typ is
+            when WACC.Lexer.T_int | WACC.Lexer.T_static | WACC.Lexer.T_extern =>
+               Node := new WACC.AST.For_Init_Node'
+                  (Typ  => WACC.AST.N_Init_Declaration,
+                   Decl => null);
+               Parse_Declaration (Decl);
+               if Decl.Typ = WACC.AST.N_VarDecl then
+                  Node.Decl := Decl.Variable_Declaration;
+               else
+                  raise Parse_Error with "Function declaration not allowed in for init";
+               end if;
+            when others =>
+               Node := new WACC.AST.For_Init_Node'
+                  (Typ => WACC.AST.N_Init_Expression,
+                   Exp => null);
+               Parse_Optional_Exp (Node.Exp, WACC.Lexer.T_Semicolon);
+         end case;
       end Parse_For_Init;
 
       procedure Parse_For
@@ -426,17 +436,51 @@ package body WACC.Parser is
          end case;
       end Parse_Statement;
 
+      procedure Parse_Specifiers
+         (Storage_Class : out WACC.AST.Any_Storage_Class_Node)
+      is
+         use type WACC.AST.Any_Storage_Class_Node;
+         Int_Count : Natural := 0;
+      begin
+         Storage_Class := null;
+         loop
+            case Next_Token.Typ is
+               when WACC.Lexer.T_extern =>
+                  if Storage_Class /= null then
+                     raise Parse_Error with "Only one storage class specifier is allowed";
+                  else
+                     Storage_Class := new WACC.AST.Storage_Class_Node'(Typ => WACC.AST.Extern);
+                  end if;
+               when WACC.Lexer.T_static =>
+                  if Storage_Class /= null then
+                     raise Parse_Error with "Only one storage class specifier is allowed";
+                  else
+                     Storage_Class := new WACC.AST.Storage_Class_Node'(Typ => WACC.AST.Static);
+                  end if;
+               when WACC.Lexer.T_int =>
+                  Int_Count := Int_Count + 1;
+               when others =>
+                  exit;
+            end case;
+            Delete_First (Input);
+         end loop;
+
+         if Int_Count /= 1 then
+            raise Parse_Error with "Expected int type";
+         end if;
+      end Parse_Specifiers;
+
       procedure Parse_Variable_Declaration
          (Node : out WACC.AST.Any_Variable_Declaration_Node)
       is
       begin
-         Expect (WACC.Lexer.T_int);
          if Next_Token.Typ /= WACC.Lexer.T_Identifier then
-            raise Parse_Error with "Expected identifier after type in variable declaration";
+            raise Parse_Error with "Expected identifier after specifiers in variable declaration";
          end if;
          Node := new WACC.AST.Variable_Declaration_Node'
             (Name => Next_Token.Literal,
-             Init => null);
+             Init => null,
+             Storage_Class => null);
          Delete_First (Input);
 
          if Next_Token.Typ = WACC.Lexer.T_Equal then
@@ -473,14 +517,14 @@ package body WACC.Parser is
          (Node : out WACC.AST.Any_Function_Declaration_Node)
       is
       begin
-         Expect (WACC.Lexer.T_int);
          if Next_Token.Typ /= WACC.Lexer.T_Identifier then
-            raise Parse_Error with "Expected identifier after type in function declaration";
+            raise Parse_Error with "Expected identifier after specifiers in function declaration";
          end if;
          Node := new WACC.AST.Function_Declaration_Node'
-            (Name   => Next_Token.Literal,
+            (Name => Next_Token.Literal,
              Params => WACC.AST.Identifier_Vectors.Empty_Vector,
-             FBody  => null);
+             FBody => null,
+             Storage_Class => null);
          Delete_First (Input);
          Expect (WACC.Lexer.T_Open_Paren);
          Parse_Param_List (Node.Params);
@@ -497,17 +541,21 @@ package body WACC.Parser is
       is
          --  Lookahead past the type and identifier to figure out if this is a
          --  variable or function declaration.
+         Storage_Class : WACC.AST.Any_Storage_Class_Node;
       begin
-         if Peek_Token (2).Typ = WACC.Lexer.T_Open_Paren then
+         Parse_Specifiers (Storage_Class);
+         if Peek_Token (1).Typ = WACC.Lexer.T_Open_Paren then
             Node := new WACC.AST.Declaration_Node'
                (Typ => WACC.AST.N_FunDecl,
                 Function_Declaration => null);
             Parse_Function_Declaration (Node.Function_Declaration);
+            Node.Function_Declaration.Storage_Class := Storage_Class;
          else
             Node := new WACC.AST.Declaration_Node'
                (Typ => WACC.AST.N_VarDecl,
                 Variable_Declaration => null);
             Parse_Variable_Declaration (Node.Variable_Declaration);
+            Node.Variable_Declaration.Storage_Class := Storage_Class;
          end if;
       end Parse_Declaration;
 
@@ -516,7 +564,7 @@ package body WACC.Parser is
       is
       begin
          case Next_Token.Typ is
-            when WACC.Lexer.T_int =>
+            when WACC.Lexer.T_int | WACC.Lexer.T_static | WACC.Lexer.T_extern =>
                Node := new WACC.AST.Block_Item_Node'(Typ => WACC.AST.N_Declaration, others => <>);
                Parse_Declaration (Node.Decl);
             when others =>
@@ -546,11 +594,11 @@ package body WACC.Parser is
          Expect (WACC.Lexer.T_Close_Brace);
       end Parse_Block;
 
-      Next_Decl : WACC.AST.Any_Function_Declaration_Node;
+      Next_Decl : WACC.AST.Any_Declaration_Node;
    begin
       while not Is_Empty (Input) loop
-         Parse_Function_Declaration (Next_Decl);
-         WACC.AST.Function_Declaration_Vectors.Append (Tree.Function_Declarations, Next_Decl);
+         Parse_Declaration (Next_Decl);
+         WACC.AST.Declaration_Vectors.Append (Tree.Declarations, Next_Decl);
       end loop;
    end Parse_Program;
 

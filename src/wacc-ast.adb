@@ -68,7 +68,7 @@ package body WACC.AST is
       Indent;
       Log ("Program");
       Indent;
-      for Decl of This.Function_Declarations loop
+      for Decl of This.Declarations loop
          Print (Decl.all);
       end loop;
       Dedent;
